@@ -1,0 +1,57 @@
+# Data & large files (live on /scratch, not in git)
+data/
+checkpoints/
+results/
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments / conda
+.env
+.venv
+env/
+venv/
+*.conda
+
+# Climate / science data formats (too large for git)
+*.nc
+*.nc4
+*.h5
+*.hdf5
+*.zarr
+*.npy
+*.npz
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# SLURM logs (these go to logs/ which is gitignored above)
+slurm-*.out
+*.slurm.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Weights & Biases
+wandb/

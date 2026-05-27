@@ -1,0 +1,29 @@
+name: climate_xai
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch
+  - torchvision
+  - pytorch-cuda=12.1
+  - numpy
+  - pandas
+  - xarray
+  - netcdf4
+  - h5py
+  - zarr
+  - matplotlib
+  - seaborn
+  - scikit-learn
+  - scipy
+  - jupyter
+  - ipykernel
+  - tqdm
+  - pyyaml
+  - pip
+  - pip:
+    - wandb
+    - einops
+    - transformer-lens
