@@ -1,5 +1,6 @@
 # Data & large files (live on /scratch, not in git)
 data/
+activations/
 checkpoints/
 results/
 logs/
