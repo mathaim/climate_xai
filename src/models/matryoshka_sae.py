@@ -1,6 +1,21 @@
-import torch.nn.functional as F
-import torch.nn as nn
+"""
+Matryoshka Sparse Autoencoder following Bussmann et al. (2025).
+
+Uses BatchTopK sparsity with fixed nested group sizes for multi-scale
+reconstruction. Each group [0:g] reconstructs the input using only
+the first g latents, enforcing that important features sort to the front.
+
+Key design choices:
+  - BatchTopK sparsity (hard top-k across entire batch)
+  - Fixed nested group sizes (not random Pareto-sampled prefixes)
+  - No L1 penalty — sparsity enforced entirely by BatchTopK
+  - WSD learning rate scheduler (warmup-stable-decay)
+  - Latent permutation by importance within groups
+"""
+
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 
 

@@ -77,8 +77,8 @@ def setup_graphcast():
     print("ONE-TIME SETUP")
     print("=" * 60)
 
-    checkpoint_path = (
-        "/home/euh7ys/ondemand/Research/GraphCast/graphcast-interpretability/"
+    checkpoint_path = os.environ.get(
+        "GRAPHCAST_CHECKPOINT",
         "graphcast_checkpoints/GraphCast - ERA5 1979-2017 - "
         "resolution 0.25 - pressure levels 37 - mesh 2to6 - "
         "precipitation input and output.npz"
@@ -178,8 +178,7 @@ def main():
     parser.add_argument("--timestamps_file", type=str, required=True)
     parser.add_argument("--start_idx",       type=int, default=0)
     parser.add_argument("--count",           type=int, default=100)
-    parser.add_argument("--base_output_dir", type=str,
-                        default="/standard/AikyamLab/madelyn/GraphCast/GraphCastData")
+    parser.add_argument("--base_output_dir", type=str, default="activations")
     args = parser.parse_args()
 
     output_dir = os.path.join(args.base_output_dir, f"layer{args.layer:02d}")

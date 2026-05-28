@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 """
-Extract GraphCast layer 8 activations — BATCHED version.
+Extract GraphCast layer activations — BATCHED version.
 
 Loads GraphCast checkpoint, normalization stats, and JIT-compiles ONCE.
 Then loops through all assigned timesteps, only re-loading the ERA5
 window for each one.
 
 Usage:
-  python extract_activations_batch.py \
-    --timestamps_file all_timestamps.txt \
-    --start_idx 0 --count 100 \
-    --output_dir /scratch/euh7ys/graphcast_activations_1979_2017
+  python -m src.extraction.extract_activations_batch \
+    --layer 8 --timestamps_file all_timestamps.txt \
+    --start_idx 0 --count 100 --output_dir activations
 """
 
 import os
@@ -98,7 +97,8 @@ def setup_graphcast():
 
     # Load checkpoint
     print("Loading GraphCast checkpoint...")
-    checkpoint_path = (
+    checkpoint_path = os.environ.get(
+        "GRAPHCAST_CHECKPOINT",
         "graphcast_checkpoints/GraphCast - ERA5 1979-2017 - "
         "resolution 0.25 - pressure levels 37 - mesh 2to6 - "
         "precipitation input and output.npz"
@@ -164,7 +164,7 @@ def setup_graphcast():
 # Process one timestep (uses pre-loaded model)
 # ============================================================================
 
-def process_timestep(target_time, run_forward_jitted, task_config, am, output_dir):
+def process_timestep(target_time, layer, run_forward_jitted, task_config, am, output_dir):
     """Extract activations for one timestep using pre-loaded model."""
 
     time_str = target_time.replace(':', '-')
@@ -189,7 +189,7 @@ def process_timestep(target_time, run_forward_jitted, task_config, am, output_di
         forcings_batched = forcings.expand_dims('batch', axis=0)
 
         # configure activation saving for this timestep
-        am.__init__(enabled=True, save_dir=output_dir, save_steps=[8],
+        am.__init__(enabled=True, save_dir=output_dir, save_steps=[layer],
                     save_node_sets=["mesh_nodes"], mode="post_res")
         am.set_time(time_str)
 
@@ -213,15 +213,20 @@ def process_timestep(target_time, run_forward_jitted, task_config, am, output_di
 def main():
     parser = argparse.ArgumentParser(
         description="Batch extract GraphCast activations (setup once, loop timesteps)")
+    parser.add_argument("--layer", type=int, required=True,
+                        help="GraphCast layer number to extract (e.g. 1, 8, 16)")
     parser.add_argument("--timestamps_file", type=str, required=True,
                         help="File with one timestamp per line (YYYY-MM-DDTHH:MM)")
     parser.add_argument("--start_idx", type=int, default=0,
                         help="First line index in timestamps file")
     parser.add_argument("--count", type=int, default=100,
                         help="Number of timesteps to process")
-    parser.add_argument("--output_dir", type=str,
-                        default="/scratch/euh7ys/graphcast_activations_1979_2017")
+    parser.add_argument("--output_dir", type=str, default="activations",
+                        help="Base output directory (layer subdir created automatically)")
     args = parser.parse_args()
+
+    # Create layer-specific output subdirectory
+    args.output_dir = os.path.join(args.output_dir, f"layer{args.layer:02d}")
 
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -245,8 +250,8 @@ def main():
     # ---- WARMUP: first timestep triggers JIT compilation ----
     print(f"Warmup (JIT compile on first timestep)...")
     warmup_t0 = time.perf_counter()
-    result = process_timestep(timestamps[0], run_forward_jitted, task_config,
-                              am, args.output_dir)
+    result = process_timestep(timestamps[0], args.layer, run_forward_jitted,
+                              task_config, am, args.output_dir)
     warmup_time = time.perf_counter() - warmup_t0
     print(f"  {timestamps[0]}: {result} ({warmup_time:.1f}s)\n")
 
@@ -257,8 +262,8 @@ def main():
 
     for i, ts in enumerate(timestamps[1:], start=1):
         ts_t0 = time.perf_counter()
-        result = process_timestep(ts, run_forward_jitted, task_config,
-                                  am, args.output_dir)
+        result = process_timestep(ts, args.layer, run_forward_jitted,
+                                  task_config, am, args.output_dir)
         elapsed = time.perf_counter() - ts_t0
 
         if result == "done":

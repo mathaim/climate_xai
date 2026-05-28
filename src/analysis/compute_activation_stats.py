@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-Compute min/max normalization stats for GraphCast layer 8 activations.
+Compute min/max normalization stats for GraphCast layer activations.
 
-Scans all activation files, tracks per-feature min and max.
+Scans all activation files for a given layer, tracks per-feature min and max.
 Saves feature_min.npy and feature_max.npy in the activation directory.
 
 Usage:
-  python compute_activation_stats.py \
-    --data_dir /scratch/euh7ys/graphcast_activations_full
+  python -m src.analysis.compute_activation_stats \
+    --data_dir activations/layer08 --layer 8
+
+  python -m src.analysis.compute_activation_stats \
+    --data_dir activations/layer01 --layer 1
 """
 
 import numpy as np
@@ -18,21 +21,25 @@ from tqdm import tqdm
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Compute per-feature min/max stats")
     parser.add_argument("--data_dir", type=str, required=True,
-                        help="Directory with layer0008*.npy files")
+                        help="Directory with activation .npy files")
+    parser.add_argument("--layer", type=int, default=None,
+                        help="Layer number (for file prefix filtering)")
     parser.add_argument("--n_files", type=int, default=None,
                         help="Max files to scan (None = all)")
     args = parser.parse_args()
 
     data_dir = Path(args.data_dir)
-    files = sorted(glob(str(data_dir / "layer0008*.npy")))
 
-    if not files:
-        # try sae_encoded format too
+    # Find activation files
+    if args.layer is not None:
+        prefix = f"layer{args.layer:04d}"
+        files = sorted(glob(str(data_dir / f"{prefix}*.npy")))
+    else:
         files = sorted(glob(str(data_dir / "*.npy")))
-        files = [f for f in files if "feature_min" not in f
-                 and "feature_max" not in f and "feature_std" not in f]
+        files = [f for f in files
+                 if not any(x in f for x in ["feature_min", "feature_max", "feature_std"])]
 
     assert len(files) > 0, f"No activation files found in {data_dir}"
 
@@ -43,7 +50,7 @@ def main():
 
     # Get dimension from first file
     sample = np.load(files[0])
-    if len(sample.shape) == 3:
+    if sample.ndim == 3:
         sample = sample.squeeze()
     d_model = sample.shape[1]
     print(f"Activation dimension: {d_model}")
@@ -53,7 +60,7 @@ def main():
 
     for f in tqdm(files, desc="Computing stats"):
         data = np.load(f)
-        if len(data.shape) == 3:
+        if data.ndim == 3:
             data = data.squeeze()
 
         feat_min = np.minimum(feat_min, data.min(axis=0))

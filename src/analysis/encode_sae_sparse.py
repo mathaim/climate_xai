@@ -16,7 +16,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import sys
 from pathlib import Path
 from tqdm import tqdm
 import argparse
@@ -124,6 +123,8 @@ def main():
     parser.add_argument("--sae_path", type=str, required=True)
     parser.add_argument("--sae_type", type=str, default="matryoshka",
                         choices=["original", "matryoshka"])
+    parser.add_argument("--layer", type=int, required=True,
+                        help="GraphCast layer number (for file prefix)")
     parser.add_argument("--start_idx", type=int, default=0)
     parser.add_argument("--count", type=int, default=1000)
     parser.add_argument("--batch_size", type=int, default=8192)
@@ -135,11 +136,13 @@ def main():
 
     print(f"Device: {DEVICE}")
     print(f"SAE type: {args.sae_type}")
+    print(f"Layer: {args.layer}")
     model = load_sae(args.sae_path, args.sae_type, DEVICE)
 
     # find activation files
     act_dir = Path(args.activations_dir)
-    act_files = sorted(act_dir.glob("layer0008*.npy"))
+    prefix = f"layer{args.layer:04d}"
+    act_files = sorted(act_dir.glob(f"{prefix}*.npy"))
     print(f"Found {len(act_files)} activation files")
 
     act_files = act_files[args.start_idx : args.start_idx + args.count]
