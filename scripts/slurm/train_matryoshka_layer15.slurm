@@ -32,3 +32,11 @@ python -u -m src.training.train_matryoshka_sae \
     --log_every 500 \
     --save_every 10000 \
     --metrics_every 5000
+
+# Copy final model to standard storage (scratch gets purged after 90 days)
+STANDARD_DIR=/standard/AikyamLab/madelyn/GraphCast/MatryoshkaSAE/checkpoints_layer15
+mkdir -p "$STANDARD_DIR"
+cp /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15/final_model.pt "$STANDARD_DIR/"
+cp /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15/config.json "$STANDARD_DIR/"
+cp /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15/training_log.jsonl "$STANDARD_DIR/"
+echo "Final model copied to $STANDARD_DIR"

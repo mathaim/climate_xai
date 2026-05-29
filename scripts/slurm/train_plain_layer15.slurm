@@ -29,3 +29,11 @@ python -u -m src.training.train_plain_sae \
     --lr 2e-4 \
     --epochs 10 \
     --save_every 2
+
+# Copy final model to standard storage (scratch gets purged after 90 days)
+STANDARD_DIR=/standard/AikyamLab/madelyn/GraphCast/PlainSAE/checkpoints_layer15
+mkdir -p "$STANDARD_DIR"
+cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/final_model.pt "$STANDARD_DIR/"
+cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/config.json "$STANDARD_DIR/"
+cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/training_log.jsonl "$STANDARD_DIR/"
+echo "Final model copied to $STANDARD_DIR"
