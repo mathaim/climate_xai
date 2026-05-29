@@ -18,7 +18,7 @@
 
 mkdir -p ~/climate_xai/logs
 
-module load anaconda
+eval "$(conda shell.bash hook)"
 conda activate climate_xai
 
 cd ~/climate_xai
