@@ -1,9 +1,10 @@
 # Data & large files (live on /scratch, not in git)
-data/
-activations/
-checkpoints/
-results/
-logs/
+# Leading slash = top-level only (so src/data/ is NOT ignored)
+/data/
+/activations/
+/checkpoints/
+/results/
+/logs/
 
 # Jupyter
 .ipynb_checkpoints/
