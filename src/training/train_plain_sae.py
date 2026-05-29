@@ -3,9 +3,11 @@
 Train Top-K Sparse Autoencoder on GraphCast layer activations.
 
 Usage:
-  python -m src.training.train_plain_sae --layer 1
-  python -m src.training.train_plain_sae --layer 8 --epochs 20
-  python -m src.training.train_plain_sae --layer 16 --activations_dir /path/to/acts
+  python -m src.training.train_plain_sae --layer 8 \
+    --data_dir /scratch/euh7ys/activations_layer08_train --epochs 10
+
+  python -m src.training.train_plain_sae --layer 0 \
+    --data_dir /standard/AikyamLab/madelyn/GraphCast/GraphCastData/layer00 --epochs 10
 """
 
 import os
@@ -16,6 +18,7 @@ import time
 import argparse
 import numpy as np
 import torch
+from pathlib import Path
 from torch.utils.data import IterableDataset, DataLoader
 
 from src.models.plain_sae import (
@@ -37,11 +40,19 @@ class NPYActivationStream(IterableDataset):
 
     def __init__(self, data_dir, layer, d_in=512, batch_size=8192, seed=0):
         super().__init__()
-        layer_prefix = f"layer{layer:04d}_mesh_gnn_post_res_nodes_mesh_nodes_t"
+        layer_prefix = f"layer{layer:04d}"
         files = sorted(glob.glob(os.path.join(data_dir, f"{layer_prefix}*.npy")))
+
+        if not files:
+            # Try loading all .npy files (excluding stats files)
+            files = sorted(glob.glob(os.path.join(data_dir, "*.npy")))
+            files = [f for f in files
+                     if not any(x in f for x in ["feature_min", "feature_max", "feature_std"])]
+
         if not files:
             raise FileNotFoundError(
-                f"No files found for prefix '{layer_prefix}' in {data_dir}"
+                f"No activation files found in {data_dir} "
+                f"(tried prefix '{layer_prefix}' and all .npy)"
             )
 
         self.d_in = d_in
@@ -58,7 +69,7 @@ class NPYActivationStream(IterableDataset):
             if arr.ndim == 3 and arr.shape[1] == 1:
                 arr = arr[:, 0, :]
             assert arr.ndim == 2 and arr.shape[1] == d_in, \
-                f"Bad shape {arr.shape} in {f}"
+                f"Bad shape {arr.shape} in {f}, expected (*, {d_in})"
             self.file_meta.append({"path": f, "n_nodes": arr.shape[0]})
 
         total = sum(m["n_nodes"] for m in self.file_meta)
@@ -97,19 +108,28 @@ class NPYActivationStream(IterableDataset):
 # ── Training ─────────────────────────────────────────────────────────────────
 
 def train(args):
-    activations_dir = os.path.join(args.activations_dir, f"layer{args.layer:02d}")
-
     print(f"\n{'=' * 60}")
     print(f"PlainSAE Training")
     print(f"  Layer:       {args.layer}")
-    print(f"  Activations: {activations_dir}")
+    print(f"  Data dir:    {args.data_dir}")
     print(f"  Output:      {args.output_dir}")
     print(f"  d_in={args.d_in}, n_latents={args.n_latents}, k={args.k_active}")
     print(f"  Epochs: {args.epochs}, Batch size: {args.batch_size}")
+    print(f"  Device: {device}")
+    if device == "cuda":
+        print(f"  GPU: {torch.cuda.get_device_name()}")
     print(f"{'=' * 60}\n")
 
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save config
+    config_dict = {k: v for k, v in vars(args).items() if v is not None}
+    with open(output_dir / "config.json", "w") as f:
+        json.dump(config_dict, f, indent=2)
+
     dataset = NPYActivationStream(
-        data_dir=activations_dir,
+        data_dir=args.data_dir,
         layer=args.layer,
         d_in=args.d_in,
         batch_size=args.batch_size,
@@ -124,10 +144,27 @@ def train(args):
     ).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr, eps=6.25e-10)
 
-    print(f"  Parameters: {sum(p.numel() for p in model.parameters()):,}")
-    print(f"  Device: {device}\n")
+    n_params = sum(p.numel() for p in model.parameters())
+    print(f"  Parameters: {n_params:,} ({n_params * 4 / 1e6:.1f} MB)")
 
-    for epoch in range(args.epochs):
+    # Resume from checkpoint
+    start_epoch = 0
+    if args.resume is not None:
+        print(f"  Resuming from {args.resume}")
+        ckpt = torch.load(args.resume, map_location=device)
+        model.load_state_dict(ckpt["model_state_dict"])
+        if "optimizer_state_dict" in ckpt:
+            opt.load_state_dict(ckpt["optimizer_state_dict"])
+        if "epoch" in ckpt:
+            start_epoch = ckpt["epoch"] + 1
+        print(f"  Resumed at epoch {start_epoch}")
+
+    # Training log
+    log_file = output_dir / "training_log.jsonl"
+    print(f"  Logging to {log_file}\n")
+
+    for epoch in range(start_epoch, args.epochs):
+        t0 = time.time()
         total_loss = total_recon = total_aux = 0.0
         n = 0
 
@@ -157,27 +194,51 @@ def train(args):
             total_aux += aux_loss.item()
             n += 1
 
+        elapsed = time.time() - t0
         dead = model.dead_mask.sum().item()
-        print(f"  Epoch {epoch + 1:02d}/{args.epochs} | "
-              f"loss={total_loss / n:.4f} | "
-              f"recon={total_recon / n:.4f} | "
-              f"aux={total_aux / n:.4f} | "
-              f"dead={dead}/{args.n_latents}")
+        avg_loss = total_loss / max(n, 1)
+        avg_recon = total_recon / max(n, 1)
+        avg_aux = total_aux / max(n, 1)
 
-    # Save checkpoint
-    os.makedirs(args.output_dir, exist_ok=True)
-    ckpt_path = os.path.join(args.output_dir, f"plain_sae_layer{args.layer:02d}.pt")
+        log_entry = {
+            "epoch": epoch + 1,
+            "loss": avg_loss,
+            "recon_loss": avg_recon,
+            "aux_loss": avg_aux,
+            "dead_latents": dead,
+            "steps": n,
+            "elapsed_sec": elapsed,
+        }
+        with open(log_file, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+
+        print(f"  Epoch {epoch + 1:02d}/{args.epochs} | "
+              f"loss={avg_loss:.4f} | "
+              f"recon={avg_recon:.4f} | "
+              f"aux={avg_aux:.4f} | "
+              f"dead={dead}/{args.n_latents} | "
+              f"{elapsed:.0f}s")
+
+        # Save periodic checkpoint
+        if (epoch + 1) % args.save_every == 0:
+            ckpt_path = output_dir / f"checkpoint_epoch{epoch + 1:03d}.pt"
+            torch.save({
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": opt.state_dict(),
+                "config": config_dict,
+            }, ckpt_path)
+            print(f"    Saved checkpoint: {ckpt_path}")
+
+    # Final save
+    final_path = output_dir / "final_model.pt"
     torch.save({
+        "epoch": args.epochs - 1,
         "model_state_dict": model.state_dict(),
-        "config": {
-            "d_in": args.d_in,
-            "n_latents": args.n_latents,
-            "k_active": args.k_active,
-            "k_aux": args.k_aux,
-            "layer": args.layer,
-        },
-    }, ckpt_path)
-    print(f"\n  Saved → {ckpt_path}")
+        "optimizer_state_dict": opt.state_dict(),
+        "config": config_dict,
+    }, final_path)
+    print(f"\nTraining complete! Final model saved to {final_path}")
 
 
 # ── Entry point ──────────────────────────────────────────────────────────────
@@ -185,11 +246,11 @@ def train(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train PlainSAE on GraphCast activations")
     parser.add_argument("--layer", type=int, required=True,
-                        help="GraphCast layer number (e.g. 1, 8, 16)")
-    parser.add_argument("--activations_dir", type=str, default="activations",
-                        help="Base dir containing layer01/, layer08/ subfolders")
+                        help="GraphCast layer number (for file prefix: layer{NNNN}_...)")
+    parser.add_argument("--data_dir", type=str, required=True,
+                        help="Directory with activation .npy files (direct path)")
     parser.add_argument("--output_dir", type=str, default="checkpoints",
-                        help="Where to save trained SAE checkpoint")
+                        help="Where to save trained SAE checkpoints")
     parser.add_argument("--d_in", type=int, default=512,
                         help="Input activation dimension")
     parser.add_argument("--n_latents", type=int, default=4096,
@@ -201,5 +262,9 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=8192)
     parser.add_argument("--lr", type=float, default=2e-4)
     parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--save_every", type=int, default=2,
+                        help="Save checkpoint every N epochs")
+    parser.add_argument("--resume", type=str, default=None,
+                        help="Path to checkpoint to resume from")
     args = parser.parse_args()
     train(args)
