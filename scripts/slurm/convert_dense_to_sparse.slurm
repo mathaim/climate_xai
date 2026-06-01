@@ -15,7 +15,7 @@
 #   sbatch scripts/slurm/convert_dense_to_sparse.slurm
 
 eval "$(conda shell.bash hook)"
-conda activate climate_xai
+conda activate py312
 
 cd ~/climate_xai
 
