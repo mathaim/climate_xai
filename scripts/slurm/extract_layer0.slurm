@@ -22,7 +22,8 @@
 mkdir -p ~/climate_xai/logs
 
 eval "$(conda shell.bash hook)"
-conda activate py312
+conda activate climate_xai
+export PYTHONNOUSERSITE=1
 
 cd ~/climate_xai
 
