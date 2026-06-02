@@ -20,7 +20,7 @@ cd ~/climate_xai
 
 python -u -m src.training.train_plain_sae \
     --layer 15 \
-    --data_dir /standard/AikyamLab/madelyn/GraphCast/GraphCastData/layer15 \
+    --data_dir /scratch/euh7ys/climate_xai/activations/layer15 \
     --output_dir /scratch/euh7ys/climate_xai/checkpoints/plain_layer15 \
     --d_in 512 \
     --n_latents 4096 \
