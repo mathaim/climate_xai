@@ -11,6 +11,7 @@
 
 # Extract GraphCast Layer 0 activations (processor step 0, 1st round).
 # Uses SLURM array: 12 tasks × 5000 timesteps each = 60,000 capacity.
+# Timestamps discovered from era5_inputs filenames.
 # Output → /scratch (each file ~80MB, total ~4.4TB for 56,982 timesteps).
 #
 # ⚠️  Verify scratch has enough free space before submitting:
@@ -27,6 +28,9 @@ export PYTHONNOUSERSITE=1
 
 cd ~/climate_xai
 
+# GraphCast checkpoint
+export GRAPHCAST_CHECKPOINT="/scratch/euh7ys/climate_xai/graphcast_checkpoints/GraphCast - ERA5 1979-2017 - resolution 0.25 - pressure levels 37 - mesh 2to6 - precipitation input and output.npz"
+
 # Each array task processes 5000 timesteps starting at its offset
 CHUNK=5000
 START_IDX=$(( SLURM_ARRAY_TASK_ID * CHUNK ))
@@ -35,7 +39,7 @@ echo "Array task $SLURM_ARRAY_TASK_ID: start_idx=$START_IDX count=$CHUNK"
 
 python -u -m src.extraction.extract_activations \
     --layer 0 \
-    --timestamps_file ~/climate_xai/data/train_timestamps.txt \
+    --era5_dir /scratch/euh7ys/climate_xai/era5_inputs \
     --start_idx $START_IDX \
     --count $CHUNK \
     --base_output_dir /scratch/euh7ys/climate_xai/activations

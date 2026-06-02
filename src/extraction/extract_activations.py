@@ -1,10 +1,15 @@
 """
 Extract GraphCast layer activations for a range of timesteps.
 
+Timestamps are discovered from ERA5 input filenames in --era5_dir.
+Files are named: era5_inputs_YYYY-MM-DDTHH-MM.npy
+
 Usage:
-  python extract_activations.py --layer 0  --timestamps_file train_timestamps.txt --start_idx 0 --count 100
-  python extract_activations.py --layer 7  --timestamps_file train_timestamps.txt --start_idx 0 --count 100
-  python extract_activations.py --layer 15 --timestamps_file train_timestamps.txt --start_idx 0 --count 100
+  python -m src.extraction.extract_activations --layer 0 \
+    --era5_dir /scratch/euh7ys/climate_xai/era5_inputs --start_idx 0 --count 100
+
+  python -m src.extraction.extract_activations --layer 8 \
+    --era5_dir /scratch/euh7ys/climate_xai/era5_inputs --start_idx 0 --count 100
 """
 import os
 import argparse
@@ -172,10 +177,29 @@ def process_timestep(target_time, layer, run_forward_jitted, task_config, am, ou
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def discover_timestamps(era5_dir):
+    """Discover timestamps from ERA5 input filenames.
+
+    Files are named: era5_inputs_YYYY-MM-DDTHH-MM.npy
+    Returns sorted list of timestamps as YYYY-MM-DDTHH:MM strings.
+    """
+    import re
+    pattern = re.compile(r"era5_inputs_(\d{4}-\d{2}-\d{2}T\d{2})-(\d{2})\.npy$")
+    timestamps = []
+    for fname in os.listdir(era5_dir):
+        m = pattern.match(fname)
+        if m:
+            # Convert YYYY-MM-DDTHH-MM → YYYY-MM-DDTHH:MM
+            timestamps.append(f"{m.group(1)}:{m.group(2)}")
+    timestamps.sort()
+    return timestamps
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--layer",           type=int, required=True)
-    parser.add_argument("--timestamps_file", type=str, required=True)
+    parser.add_argument("--era5_dir",        type=str, required=True,
+                        help="Directory with era5_inputs_*.npy files (timestamps from filenames)")
     parser.add_argument("--start_idx",       type=int, default=0)
     parser.add_argument("--count",           type=int, default=100)
     parser.add_argument("--base_output_dir", type=str, default="activations")
@@ -184,12 +208,14 @@ def main():
     output_dir = os.path.join(args.base_output_dir, f"layer{args.layer:02d}")
     os.makedirs(output_dir, exist_ok=True)
 
-    with open(args.timestamps_file) as f:
-        all_timestamps = [l.strip() for l in f if l.strip()]
+    all_timestamps = discover_timestamps(args.era5_dir)
+    if not all_timestamps:
+        raise FileNotFoundError(f"No era5_inputs_*.npy files found in {args.era5_dir}")
     timestamps = all_timestamps[args.start_idx : args.start_idx + args.count]
 
     print(f"Layer:      {args.layer}")
     print(f"Output dir: {output_dir}")
+    print(f"ERA5 dir:   {args.era5_dir} ({len(all_timestamps)} total timestamps)")
     print(f"Timestamps: {len(timestamps)}  ({timestamps[0]} → {timestamps[-1]})")
     print()
 
