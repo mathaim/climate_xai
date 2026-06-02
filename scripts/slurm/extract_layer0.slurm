@@ -22,8 +22,12 @@
 
 mkdir -p ~/climate_xai/logs
 
-eval "$(conda shell.bash hook)"
-conda activate climate_xai
+# Use the SAME working environment that successfully extracted L8 and L15:
+# the graphcast_sae_env venv (CUDA12 JAX + the custom graphcast fork).
+# Do NOT use the climate_xai conda env — it has CPU-only JAX and an
+# incompatible xarray that breaks extraction.
+module load cuda/12.8.0
+source /home/euh7ys/ondemand/Research/GraphCast/graphcast-interpretability/graphcast_sae_env/bin/activate
 export PYTHONNOUSERSITE=1
 
 cd ~/climate_xai
