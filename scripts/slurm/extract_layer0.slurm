@@ -5,14 +5,18 @@
 #SBATCH --time=48:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
-#SBATCH --array=0-11
+#SBATCH --array=0-28
 #SBATCH --output=logs/ext_L0_%A_%a.out
 #SBATCH --error=logs/ext_L0_%A_%a.err
 
 # Extract GraphCast Layer 0 activations (processor step 0, 1st round).
-# Uses SLURM array: 12 tasks × 5000 timesteps each = 60,000 capacity.
+# Uses SLURM array: 29 tasks × 2000 timesteps each = 58,000 capacity.
+# Smaller chunk (2000) keeps each process under the JAX GPU-memory leak
+# threshold (~4000 extractions/process), so tasks finish instead of OOM-ing.
+# Already-extracted timesteps are skipped instantly (resume-safe), so this
+# only fills in the ~37k missing mesh_gnn timesteps.
 # Timestamps discovered from era5_inputs filenames.
-# Output → /scratch (each file ~80MB, total ~4.4TB for 56,982 timesteps).
+# Output → /scratch (each file ~84MB, total ~4.4TB for 56,980 timesteps).
 #
 # ⚠️  Verify scratch has enough free space before submitting:
 #     df -h /scratch/euh7ys
@@ -30,13 +34,19 @@ module load cuda/12.8.0
 source /home/euh7ys/ondemand/Research/GraphCast/graphcast-interpretability/graphcast_sae_env/bin/activate
 export PYTHONNOUSERSITE=1
 
+# Mitigate JAX GPU-memory growth across timesteps: disable the big
+# preallocation pool and free device buffers on demand (slightly slower
+# per-step, but avoids the fragmentation OOM that killed the prior run).
+export XLA_PYTHON_CLIENT_PREALLOCATE=false
+export XLA_PYTHON_CLIENT_ALLOCATOR=platform
+
 cd ~/climate_xai
 
 # GraphCast checkpoint
 export GRAPHCAST_CHECKPOINT="/scratch/euh7ys/climate_xai/graphcast_checkpoints/GraphCast - ERA5 1979-2017 - resolution 0.25 - pressure levels 37 - mesh 2to6 - precipitation input and output.npz"
 
-# Each array task processes 5000 timesteps starting at its offset
-CHUNK=5000
+# Each array task processes 2000 timesteps starting at its offset
+CHUNK=2000
 START_IDX=$(( SLURM_ARRAY_TASK_ID * CHUNK ))
 
 echo "Array task $SLURM_ARRAY_TASK_ID: start_idx=$START_IDX count=$CHUNK"
