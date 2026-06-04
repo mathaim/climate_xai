@@ -1,18 +1,23 @@
 #!/bin/bash
 #SBATCH --job-name=cp_L15
 #SBATCH --partition=standard
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --mem=8G
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --output=logs/cp_L15_%j.out
 #SBATCH --error=logs/cp_L15_%j.err
 
 # Copy GraphCast Layer 15 activations from /standard/AikyamLab (paid, being
 # decommissioned) to the new free /project/AikyamLab space.
 #
-# rsync is resumable + verifiable: if this job is killed or re-run, it only
-# transfers what is missing/changed. Do NOT delete the /standard copy until
-# the file counts at the end of the log match (a separate, deliberate step).
+# Single-stream rsync was ~40MB/s (~32h ETA, over the old 24h walltime).
+# This runs 8 concurrent rsync streams (one file each) to better saturate
+# Ceph, with a 48h walltime as safety margin.
+#
+# Resumable + verifiable: rsync -a skips files already present & identical in
+# the dest, so re-running only copies what is missing. Do NOT delete the
+# /standard copy until the file counts at the end of the log match (a
+# separate, deliberate step).
 
 mkdir -p ~/climate_xai/logs
 
@@ -25,11 +30,12 @@ echo "Source: $SRC"
 echo "Dest:   $DEST"
 echo "Start:  $(date)"
 
-# -a preserve everything; --info progress/stats for a readable log.
-# Trailing slash on SRC copies the *contents* of layer15 into Layer15.
-rsync -a --info=progress2,stats2 "$SRC/" "$DEST/"
+# Parallel per-file copy. find (not a shell glob) avoids "argument list too
+# long" on ~57k files; xargs -P 8 runs 8 rsync streams at once.
+find "$SRC" -maxdepth 1 -name '*.npy' -printf '%f\n' \
+  | xargs -P 8 -I {} rsync -a "$SRC/{}" "$DEST/"
 RC=$?
-echo "rsync exit code: $RC"
+echo "parallel rsync exit code: $RC"
 echo "End:    $(date)"
 
 echo "Source .npy count: $(find "$SRC"  -maxdepth 1 -name '*.npy' | wc -l)"
