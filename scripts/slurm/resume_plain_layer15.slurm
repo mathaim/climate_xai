@@ -8,20 +8,20 @@
 #SBATCH --output=logs/psae_L15_resume_%j.out
 #SBATCH --error=logs/psae_L15_resume_%j.err
 
-# Resume PlainSAE L15 from checkpoint_epoch008.pt (epoch 9 done, need epoch 10).
-# Only 1 epoch remaining — 4h is plenty.
+# Resume PlainSAE L15 from checkpoint_epoch008.pt (~1 epoch remaining).
+# Reads activations + checkpoint from /project; writes new ckpts to /project.
 
 mkdir -p ~/climate_xai/logs
-
 eval "$(conda shell.bash hook)"
 conda activate py312
-
 cd ~/climate_xai
+
+OUT=/project/AikyamLab/madelyn/GraphCast/train/PlainSAE/Layer15
 
 python -u -m src.training.train_plain_sae \
     --layer 15 \
-    --data_dir /scratch/euh7ys/climate_xai/activations/layer15 \
-    --output_dir /scratch/euh7ys/climate_xai/checkpoints/plain_layer15 \
+    --data_dir /project/AikyamLab/madelyn/GraphCast/activations/Layer15 \
+    --output_dir "$OUT" \
     --d_in 512 \
     --n_latents 4096 \
     --k_active 32 \
@@ -29,12 +29,6 @@ python -u -m src.training.train_plain_sae \
     --lr 2e-4 \
     --epochs 10 \
     --save_every 2 \
-    --resume /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/checkpoint_epoch008.pt
+    --resume "$OUT/checkpoint_epoch008.pt"
 
-# Copy final model to standard storage
-STANDARD_DIR=/standard/AikyamLab/madelyn/GraphCast/PlainSAE/checkpoints_layer15
-mkdir -p "$STANDARD_DIR"
-cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/final_model.pt "$STANDARD_DIR/"
-cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/config.json "$STANDARD_DIR/"
-cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/training_log.jsonl "$STANDARD_DIR/"
-echo "Final model copied to $STANDARD_DIR"
+echo "PlainSAE L15 resume done. Models in $OUT"

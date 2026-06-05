@@ -8,20 +8,22 @@
 #SBATCH --output=logs/psae_L15_%j.out
 #SBATCH --error=logs/psae_L15_%j.err
 
-# Train PlainSAE (TopK + AuxK) on GraphCast layer 15 activations.
-# Activations on standard storage (slower reads).
+# Train PlainSAE (TopK + AuxK) on GraphCast Layer 15 activations.
+# Reads activations from /project (Ceph); writes checkpoints directly to the
+# durable /project train tree (no scratch copy needed).
 
 mkdir -p ~/climate_xai/logs
-
 eval "$(conda shell.bash hook)"
 conda activate py312
-
 cd ~/climate_xai
+
+OUT=/project/AikyamLab/madelyn/GraphCast/train/PlainSAE/Layer15
+mkdir -p "$OUT"
 
 python -u -m src.training.train_plain_sae \
     --layer 15 \
-    --data_dir /standard/AikyamLab/madelyn/GraphCast/GraphCastData/layer15 \
-    --output_dir /scratch/euh7ys/climate_xai/checkpoints/plain_layer15 \
+    --data_dir /project/AikyamLab/madelyn/GraphCast/activations/Layer15 \
+    --output_dir "$OUT" \
     --d_in 512 \
     --n_latents 4096 \
     --k_active 32 \
@@ -30,10 +32,4 @@ python -u -m src.training.train_plain_sae \
     --epochs 10 \
     --save_every 2
 
-# Copy final model to standard storage (scratch gets purged after 90 days)
-STANDARD_DIR=/standard/AikyamLab/madelyn/GraphCast/PlainSAE/checkpoints_layer15
-mkdir -p "$STANDARD_DIR"
-cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/final_model.pt "$STANDARD_DIR/"
-cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/config.json "$STANDARD_DIR/"
-cp /scratch/euh7ys/climate_xai/checkpoints/plain_layer15/training_log.jsonl "$STANDARD_DIR/"
-echo "Final model copied to $STANDARD_DIR"
+echo "PlainSAE L15 done. Models in $OUT"

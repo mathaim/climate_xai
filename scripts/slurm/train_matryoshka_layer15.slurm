@@ -8,15 +8,17 @@
 #SBATCH --output=logs/msae_L15_%j.out
 #SBATCH --error=logs/msae_L15_%j.err
 
-# Train MatryoshkaSAE (BatchTopK) on GraphCast layer 15 activations.
-# Data lives on standard storage (slower reads, but no scratch space).
+# Train MatryoshkaSAE (BatchTopK) on GraphCast Layer 15 activations.
+# Reads from /project (Ceph); writes checkpoints to the durable /project tree.
+# Stats (feature_min/max) already present in the activations dir.
 
 mkdir -p ~/climate_xai/logs
-
 eval "$(conda shell.bash hook)"
 conda activate py312
-
 cd ~/climate_xai
+
+OUT=/project/AikyamLab/madelyn/GraphCast/train/MatryoshkaSAE/Layer15
+mkdir -p "$OUT"
 
 python -u -m src.training.train_matryoshka_sae \
     --layer 15 \
@@ -27,16 +29,10 @@ python -u -m src.training.train_matryoshka_sae \
     --n_steps 300000 \
     --batch_size 4096 \
     --lr 3e-2 \
-    --data_dir /standard/AikyamLab/madelyn/GraphCast/GraphCastData/layer15 \
-    --output_dir /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15 \
+    --data_dir /project/AikyamLab/madelyn/GraphCast/activations/Layer15 \
+    --output_dir "$OUT" \
     --log_every 500 \
     --save_every 10000 \
     --metrics_every 5000
 
-# Copy final model to standard storage (scratch gets purged after 90 days)
-STANDARD_DIR=/standard/AikyamLab/madelyn/GraphCast/MatryoshkaSAE/checkpoints_layer15
-mkdir -p "$STANDARD_DIR"
-cp /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15/final_model.pt "$STANDARD_DIR/"
-cp /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15/config.json "$STANDARD_DIR/"
-cp /scratch/euh7ys/climate_xai/checkpoints/matryoshka_layer15/training_log.jsonl "$STANDARD_DIR/"
-echo "Final model copied to $STANDARD_DIR"
+echo "MatryoshkaSAE L15 done. Models in $OUT"
