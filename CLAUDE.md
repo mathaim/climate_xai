@@ -53,7 +53,7 @@ climate_xai/
 - Partition: `gpu` for training/extraction, `standard` for data processing
 - Request GPU with: `#SBATCH --gres=gpu:1`
 - Load modules before running: `module load anaconda`
-- Activate conda env: `conda activate climate_xai`
+- Activate conda env: `conda activate py312`
 
 ## Git Hygiene
 - Never commit data files (*.nc, *.h5, *.pt, *.zarr, etc.)

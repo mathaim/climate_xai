@@ -155,7 +155,7 @@ def process_timestep(target_time, layer, run_forward_jitted, task_config, am, ou
         save_dir=output_dir,
         save_steps=[layer],
         save_node_sets=["mesh_nodes"],
-        mode="post_res",
+        mode="post_res", save_components=["mesh_gnn"],
     )
     am.set_time(time_str)
     rollout.chunked_prediction(
