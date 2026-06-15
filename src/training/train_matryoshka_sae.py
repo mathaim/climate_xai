@@ -35,6 +35,7 @@ def get_config():
                         help="Nested group boundaries (last must equal n_latents)")
     parser.add_argument("--target_l0", type=float, default=32.0)
     parser.add_argument("--lr", type=float, default=3e-2)
+    parser.add_argument("--topk_mode", type=str, default="batch", choices=["batch","per_sample"])
 
     # Training
     parser.add_argument("--n_steps", type=int, default=300_000)
@@ -198,6 +199,7 @@ def train(cfg):
         target_l0=cfg.target_l0,
         n_steps=cfg.n_steps,
         lr=cfg.lr,
+        topk_mode=cfg.topk_mode,
         permute_latents=True,
     ).to(device)
 

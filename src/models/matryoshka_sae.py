@@ -92,6 +92,10 @@ class MatryoshkaSAE(nn.Module):
         n_steps,
         lr=3e-2,
         permute_latents=True,
+        topk_mode="batch",
+        k_aux=512,
+        aux_coef=1.0,
+        dead_window=100_000,
     ):
         super().__init__()
 
@@ -135,6 +139,14 @@ class MatryoshkaSAE(nn.Module):
 
         self.step_count = 0
 
+        # AuxK dead-latent resurrection
+        self.topk_mode = topk_mode
+        self.k_aux = k_aux
+        self.aux_coef = aux_coef
+        self.dead_window = dead_window
+        self.register_buffer("miss_counts", torch.zeros(n_latents, dtype=torch.long))
+        self.register_buffer("dead_mask", torch.zeros(n_latents, dtype=torch.bool))
+
     @property
     def dtype(self):
         return self.W_enc.dtype
@@ -160,6 +172,21 @@ class MatryoshkaSAE(nn.Module):
         mask = mask.reshape(pre_acts.shape)
         return pre_acts * mask
 
+    def _per_sample_topk(self, pre_acts, k):
+        """Per-sample TopK: each row keeps its own top-k (mirrors PlainSAE)."""
+        k = int(round(k))
+        if k >= pre_acts.shape[1]:
+            return pre_acts
+        vals, idx = torch.topk(pre_acts, k, dim=1)
+        mask = torch.zeros_like(pre_acts)
+        mask.scatter_(1, idx, 1.0)
+        return pre_acts * mask
+
+    def _apply_topk(self, pre_acts, k):
+        if self.topk_mode == "per_sample":
+            return self._per_sample_topk(F.relu(pre_acts), k)
+        return self._batch_topk(pre_acts, k)
+
     @torch.no_grad()
     def get_acts(self, x, indices=None, normalize=True):
         if normalize:
@@ -168,7 +195,7 @@ class MatryoshkaSAE(nn.Module):
             indices = [indices]
         if indices is None:
             preacts = x @ self.W_enc + self.b_enc
-            acts = self._batch_topk(F.relu(preacts), self.target_l0)
+            acts = self._apply_topk(preacts, self.target_l0)
             acts = torch.einsum("...d,d->...d", acts, self.W_dec.norm(dim=1))
         else:
             preacts = x @ self.W_enc[:, indices] + self.b_enc[indices]
@@ -186,7 +213,7 @@ class MatryoshkaSAE(nn.Module):
 
         # Apply BatchTopK: keeps top batch_size*target_l0 values, zeros the rest
         # This naturally selects positive values without needing ReLU
-        acts_full = self._batch_topk(raw_pre_acts, self.target_l0)
+        acts_full = self._apply_topk(raw_pre_acts, self.target_l0)
 
         # Track L0
         with torch.no_grad():
@@ -208,6 +235,23 @@ class MatryoshkaSAE(nn.Module):
             group_losses.append(mse)
 
         loss = torch.stack(group_losses).mean()
+
+        # --- AuxK dead-latent resurrection ---
+        with torch.no_grad():
+            active = (acts_full > 0).any(dim=0)
+            self.miss_counts[active] = 0
+            self.miss_counts[~active] += x.shape[0]
+            self.dead_mask = self.miss_counts >= self.dead_window
+        if self.dead_mask.any():
+            residual = (x - group_recons[-1]).detach()
+            dead_pre = F.relu(raw_pre_acts) * self.dead_mask.unsqueeze(0)
+            k_aux = min(self.k_aux, int(self.dead_mask.sum().item()))
+            if k_aux > 0:
+                vals, idx = torch.topk(dead_pre, k_aux, dim=1)
+                aux_code = torch.zeros_like(dead_pre).scatter(1, idx, vals)
+                aux_recon = aux_code @ self.W_dec
+                aux_loss = ((aux_recon - residual) ** 2).sum(dim=-1).mean()
+                loss = loss + self.aux_coef * aux_loss
 
         result = {"loss": loss, "avg_l0": avg_l0, "sparsity_scale": 0.0}
 
