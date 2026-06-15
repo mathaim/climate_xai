@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=ext_L0
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:a6000:1
 #SBATCH --time=48:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=4
