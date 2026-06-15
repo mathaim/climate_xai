@@ -57,3 +57,5 @@ slurm-*.out
 
 # Weights & Biases
 wandb/
+*.bak.*
+nohup.out
