@@ -6,5 +6,5 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --output=logs/ar_saefeat_%j.out
 mkdir -p ~/climate_xai/logs
-eval "$(conda shell.bash hook)"; conda activate py312
+eval "$(conda shell.bash hook)"; conda activate base
 cd ~/climate_xai && python -u -m src.analysis.ar_intensity.build_sae_features
