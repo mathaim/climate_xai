@@ -14,18 +14,21 @@ def main():
     for ti, grp in qual.groupby("time_index"):
         dt = index_to_datetime(int(ti))
         f = f"{ERA5_DIR}/era5_inputs_{dt.strftime('%Y-%m-%dT%H-%M')}.npy"
-        try: arr = np.load(f)
-        except FileNotFoundError: miss += 1; continue
+        try:
+            arr = np.load(f)
+        except Exception as e:
+            miss += 1
+            if miss <= 10: print(f"  [skip {os.path.basename(f)}]: {e}", flush=True)
+            continue
         for r in grp.region:
             mi = max_ivt_over_ar(arr, setup[r], masks[r][int(ti)-1], qi, ui, vi, levels)
             rows.append((int(ti), dt, r, mi))
         n += 1
         if n % 2000 == 0: print(f"  {n} timesteps, {len(rows)} rows", flush=True)
-    df = pd.DataFrame(rows, columns=["time_index","datetime","region","max_ivt"])
+    df = pd.DataFrame(rows, columns=["time_index","datetime","region","max_ivt"]).dropna(subset=["max_ivt"])
     df["month"] = df.datetime.dt.month
-    df = df.dropna(subset=["max_ivt"])
     df.to_parquet(f"{OUTDIR}/ar_intensity.parquet")
-    print(f"saved {len(df)} rows ({miss} timesteps missing era5)")
+    print(f"saved {len(df)} rows | {miss} timesteps skipped (missing/corrupt era5)")
     for r in REGIONS:
         s = df[df.region==r].max_ivt
         print(f"  {r}: n={len(s)} | maxIVT mean={s.mean():.0f} "
