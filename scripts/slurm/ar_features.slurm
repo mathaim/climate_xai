@@ -2,7 +2,7 @@
 #SBATCH --job-name=ar_feat3
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a6000:1
-#SBATCH --time=4:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=8
 #SBATCH --output=/home/euh7ys/climate_xai/logs/ar_feat3_%j.out
