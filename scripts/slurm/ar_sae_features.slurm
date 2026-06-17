@@ -2,7 +2,7 @@
 #SBATCH --job-name=ar_saefeat
 #SBATCH --partition=standard
 #SBATCH --time=8:00:00
-#SBATCH --mem=32G
+#SBATCH --mem=96G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=logs/ar_saefeat_%j.out
 mkdir -p ~/climate_xai/logs
