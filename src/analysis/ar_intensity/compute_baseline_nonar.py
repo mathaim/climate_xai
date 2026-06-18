@@ -13,7 +13,7 @@ def main():
     rng=np.random.default_rng(0); samples={}
     for r in REGIONS:
         z=q[(q.region==r)&(q.coverage_frac==0)].time_index.to_numpy()
-        samples[r]=set(int(x) for x in rng.choice(z,min(N_PER,len(z)),replace=False))
+        samples[r]=set(int(x) for x in z)
     T=sorted(set().union(*samples.values())); print("non-AR timesteps:",len(T),flush=True)
     m,c,fmin,frng=load_sae(SAE,dev)
     p90=torch.from_numpy(np.load(f"{THR}/{SAE}_p90.npy")).to(dev)[None,:]
