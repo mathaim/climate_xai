@@ -9,11 +9,16 @@ from src.analysis.ar_intensity.sae_features import SAES, load_sae
 from src.analysis.ar_intensity.regions import REGIONS
 from src.analysis.ar_intensity.binning import BINS
 from src.analysis.ar_intensity._load import load
-RES="results/ar_intensity"; RANK={b:i for i,b in enumerate(BINS)}
+RES="results/ar_intensity"; RANK={b:i for i,b in enumerate(BINS)}; CAP=12000
 VARIANTS=[f"{s}_{d}" for s in ["region","global"] for d in ["binary","magnitude","top10"]]
 def corr(X,rk):
     Xc=X-X.mean(0,keepdims=True); rc=rk-rk.mean()
     return (Xc.T@rc)/(np.sqrt((Xc*Xc).sum(0)*(rc@rc))+1e-12)
+def cv_bacc(F,y,cv,scorer):
+    if len(y)>CAP:
+        idx=np.random.default_rng(0).choice(len(y),CAP,replace=False); F,y=F[idx],y[idx]
+    clf=make_pipeline(StandardScaler(),LogisticRegression(max_iter=400))
+    return cross_val_score(clf,F,y,cv=cv,scoring=scorer,n_jobs=-1).mean()
 def main():
     os.makedirs(f"{RES}/plots",exist_ok=True); os.makedirs(f"{RES}/corr",exist_ok=True)
     bacc=make_scorer(balanced_accuracy_score); cv=StratifiedKFold(5,shuffle=True,random_state=0)
@@ -27,9 +32,8 @@ def main():
             rkall=md.intensity_bin.map(RANK).to_numpy(float)
             for r in list(REGIONS)+["pooled"]:
                 mk=slice(None) if r=="pooled" else (reg==r)
-                clf=make_pipeline(StandardScaler(),LogisticRegression(max_iter=2000))
-                a=cross_val_score(clf,F[mk],y[mk],cv=cv,scoring=bacc).mean()
-                dec.append(dict(sae=name,arch=arch,layer=layer,variant=v,region=r,balanced_acc=a))
+                dec.append(dict(sae=name,arch=arch,layer=layer,variant=v,region=r,
+                                balanced_acc=cv_bacc(F[mk],y[mk],cv,bacc)))
             for r in REGIONS:
                 m=(reg==r); X=F[m].astype(np.float64); rk=rkall[m]; sub=md.loc[m,"intensity_bin"].to_numpy()
                 cc=corr(X,rk); np.save(f"{RES}/corr/{name}_{v}_{r}.npy",cc.astype(np.float32))
