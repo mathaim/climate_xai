@@ -6,7 +6,7 @@ from src.analysis.ar_intensity.sae_features import load_sae, encode, act_file
 from src.analysis.ar_intensity.regions import REGIONS, index_to_datetime, AR_START
 from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, region_node_setup, node_ivt, ERA5_DIR
 PLOTS="results/ar_intensity/plots"; SAE="plain_L8"
-CONCEPT={"W_N_America":3069,"W_Europe":1008,"W_S_America":1115,"E_Australia":975}
+CONCEPT={"W_N_America":1592,"W_Europe":2948,"W_S_America":3218,"E_Australia":3720}
 WIN={"W_N_America":(datetime(2015,12,1),datetime(2016,2,28)),
      "W_Europe":(datetime(2015,12,1),datetime(2016,2,28)),
      "W_S_America":(datetime(2015,6,1),datetime(2015,8,31)),
