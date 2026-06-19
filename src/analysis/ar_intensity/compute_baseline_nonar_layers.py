@@ -13,7 +13,7 @@ def main():
     rmap={r:np.array([pos[int(x)] for x in setup[r]["nodes"]]) for r in REGIONS}
     noar={r:set(int(x) for x in q[(q.region==r)&(q.coverage_frac==0)].time_index) for r in REGIONS}
     allno=sorted(set().union(*noar.values())); rng=np.random.default_rng(0)
-    keep=sorted(rng.choice(allno,min(N_SAMPLE,len(allno)),replace=False)); print("non-AR timesteps:",len(keep),flush=True)
+    keep=allno; print("non-AR timesteps (all):",len(keep),flush=True)
     for SAE in SAES_TO_DO:
         if os.path.exists(f"{OUT}/nonar_rates_{SAE}.npz"): print(SAE,"exists, skip",flush=True); continue
         m,c,fmin,frng=load_sae(SAE,dev); p90=torch.from_numpy(np.load(f"{THR}/{SAE}_p90.npy")).to(dev)[None,:]

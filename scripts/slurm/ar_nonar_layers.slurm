@@ -2,7 +2,7 @@
 #SBATCH --job-name=ar_nonar2
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a6000:1
-#SBATCH --time=3:00:00
+#SBATCH --time=5:00:00
 #SBATCH --mem=24G
 #SBATCH --cpus-per-task=8
 #SBATCH --output=/home/euh7ys/climate_xai/logs/ar_nonar2_%j.out
