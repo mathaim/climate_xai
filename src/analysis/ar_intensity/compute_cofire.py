@@ -2,7 +2,7 @@
 import os, numpy as np, torch
 from src.analysis.ar_intensity.sae_features import load_sae, encode, act_file
 from src.analysis.ar_intensity.regions import index_to_datetime
-OUT="results/ar_intensity/cofire"; N_SAMPLE=300; TOTAL=56700
+OUT="/scratch/euh7ys/climate_xai/cofire"; N_SAMPLE=300; TOTAL=56700
 def main():
     os.makedirs(OUT,exist_ok=True); dev="cuda" if torch.cuda.is_available() else "cpu"; print("device",dev,flush=True)
     cand=np.random.default_rng(0).choice(TOTAL,N_SAMPLE*2,replace=False)+1
