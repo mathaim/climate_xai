@@ -26,7 +26,7 @@ def main():
             binlab=np.array(list(bar)+[None]*len(Xno),dtype=object)
             for sd in SEEDS:
                 idx=np.arange(len(X)); tr,te=train_test_split(idx,test_size=0.5,random_state=sd,stratify=y)
-                main=int(np.argmax(np.abs(pbcorr(X[tr].astype(np.float64),y[tr]))))
+                cc=pbcorr(X[tr].astype(np.float64),y[tr]); main=int(np.argmax(cc))
                 thr=best_thr(X[tr,main],y[tr]); te_ar=te[y[te]==1]
                 for b in BINS:
                     sel=te_ar[binlab[te_ar]==b]
