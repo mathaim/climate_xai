@@ -10,7 +10,7 @@ from src.analysis.ar_intensity import concept_ivt_core as C
 import cartopy.crs as ccrs, cartopy.feature as cfeature
 PLOTS="/scratch/euh7ys/climate_xai/plots"; TRACK="/scratch/euh7ys/climate_xai/concept_ivt"
 SAE="plain_L8"; NEV=50
-CONCEPT={"W_N_America":1592,"W_Europe":2948,"W_S_America":3218,"E_Australia":3720}
+CONCEPT={"W_N_America":1592,"W_Europe":2948,"W_S_America":3218,"E_Australia":816}
 conv=lambda x:x-360 if x>180 else x; PC=ccrs.PlateCarree()
 CMAP=LinearSegmentedColormap.from_list("moist",["#e8f6f9","#9fdcc4","#4eb3d3","#2b6cb0","#3b3b98","#7d3c98","#c0392b"])
 def geo(fig,pos,n):
