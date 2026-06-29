@@ -14,8 +14,8 @@ try:
     proj = ccrs.PlateCarree(); HAS = True
 except Exception:
     proj = None; HAS = False
-fig = plt.figure(figsize=(18, 5))
-gs = fig.add_gridspec(1, 4, left=0.10, right=0.92, bottom=0.10, top=0.93, wspace=0.06)
+fig = plt.figure(figsize=(18, 3.4))
+gs = fig.add_gridspec(1, 4, left=0.08, right=0.93, bottom=0.13, top=0.86, wspace=0.06)
 axes = [fig.add_subplot(gs[0, i], projection=proj) for i in range(4)]
 ims = []
 for i, (ax, (title, Z, cmap, vmn, vmx)) in enumerate(zip(axes, specs)):
@@ -34,12 +34,12 @@ for i, (ax, (title, Z, cmap, vmn, vmx)) in enumerate(zip(axes, specs)):
         if i == 0: ax.set_ylabel("Latitude (\u00b0N)", fontsize=8)
     ims.append(im); ax.set_title(title, fontsize=10.5, loc="left")
 # left colorbar: shared IVT (a-c)
-caxL = fig.add_axes([0.035, 0.28, 0.012, 0.45])
+caxL = fig.add_axes([0.04, 0.20, 0.011, 0.55])
 cbL = fig.colorbar(ims[0], cax=caxL); cbL.set_label("IVT (kg m$^{-1}$ s$^{-1}$)", fontsize=9)
 caxL.yaxis.set_ticks_position("left"); caxL.yaxis.set_label_position("left")
 # right colorbar: difference (d)
-caxR = fig.add_axes([0.945, 0.28, 0.012, 0.45])
+caxR = fig.add_axes([0.945, 0.20, 0.011, 0.55])
 cbR = fig.colorbar(ims[3], cax=caxR); cbR.set_label("$\\Delta$IVT (kg m$^{-1}$ s$^{-1}$)", fontsize=9)
 out = "/scratch/euh7ys/climate_xai/plots/inject_1592_map.png"
 os.makedirs(os.path.dirname(out), exist_ok=True)
-plt.savefig(out, dpi=180); print("saved", out)
+plt.savefig(out, dpi=180, bbox_inches="tight", pad_inches=0.12); print("saved", out)
