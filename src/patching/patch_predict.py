@@ -7,6 +7,7 @@ from graphcast import (autoregressive, casting, checkpoint, data_utils,
                        graphcast as gc, normalization, rollout)
 from graphcast.deep_typed_graph_net import SAEInjector
 from src.patching.sae_to_jax import load_sae, NPZ_L15
+_CLAMP_SCALE = float(os.environ.get("CLAMP_SCALE", "1.0"))  # 1.0 = correct (delta * rownorm)
 class CastInjector(SAEInjector):
     """SAEInjector reimplemented with threshold-based TopK (no scatter -> avoids the XLA
     block-limit blow-up) and output cast back to the input dtype (model runs in bfloat16)."""
@@ -15,7 +16,8 @@ class CastInjector(SAEInjector):
             return x
         p = self.params
         xm = x - jnp.mean(x, axis=-1, keepdims=True)
-        xn = xm / jnp.linalg.norm(xm, ord=2, axis=-1, keepdims=True).clip(min=1e-6)
+        rownorm = jnp.linalg.norm(xm, ord=2, axis=-1, keepdims=True).clip(min=1e-6)
+        xn = xm / rownorm
         code_pre = jax.nn.relu((xn - p.b_pre) @ p.enc_w)          # (..., 4096)
         vals, _ = jax.lax.top_k(code_pre, p.k_active)             # (..., k)
         code = jnp.where(code_pre >= vals[..., -1:], code_pre, 0.0)
@@ -24,7 +26,9 @@ class CastInjector(SAEInjector):
             dec_eff = p.dec_w / jnp.linalg.norm(p.dec_w, axis=1, keepdims=True).clip(min=1e-8)
         else:
             dec_eff = p.dec_w
-        return (x + (new_code - code) @ dec_eff).astype(x.dtype)
+        delta = (new_code - code) @ dec_eff
+        # map normalized-space delta back to the raw activation (~22x) -- the missing rescale
+        return (x + delta * rownorm * _CLAMP_SCALE).astype(x.dtype)
 ZARR = "gs://weatherbench2/datasets/era5/1959-2022-full_37-6h-0p25deg_derived.zarr"
 VARS = ["geopotential","specific_humidity","temperature","u_component_of_wind","v_component_of_wind",
         "vertical_velocity","2m_temperature","10m_u_component_of_wind","10m_v_component_of_wind",
