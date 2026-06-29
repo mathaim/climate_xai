@@ -14,12 +14,12 @@ class CastInjector(SAEInjector):
         if alpha is None:
             return x
         p = self.params
-        xm = x - jnp.mean(x, axis=1, keepdims=True)
-        xn = xm / jnp.linalg.norm(xm, ord=2, axis=1, keepdims=True).clip(min=1e-6)
-        code_pre = jax.nn.relu((xn - p.b_pre) @ p.enc_w)
-        vals, _ = jax.lax.top_k(code_pre, p.k_active)
-        code = jnp.where(code_pre >= vals[:, -1:], code_pre, 0.0)
-        new_code = code * (1.0 + alpha[None, :])
+        xm = x - jnp.mean(x, axis=-1, keepdims=True)
+        xn = xm / jnp.linalg.norm(xm, ord=2, axis=-1, keepdims=True).clip(min=1e-6)
+        code_pre = jax.nn.relu((xn - p.b_pre) @ p.enc_w)          # (..., 4096)
+        vals, _ = jax.lax.top_k(code_pre, p.k_active)             # (..., k)
+        code = jnp.where(code_pre >= vals[..., -1:], code_pre, 0.0)
+        new_code = code * (1.0 + alpha)                           # alpha [4096] broadcasts over last axis
         if p.unit_norm_decoder:
             dec_eff = p.dec_w / jnp.linalg.norm(p.dec_w, axis=1, keepdims=True).clip(min=1e-8)
         else:
