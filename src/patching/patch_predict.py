@@ -1,6 +1,6 @@
 """GraphCast forward with optional L15 Plain-SAE clamp; returns the predicted next state.
 Torch-free. Streams a 5-step ERA5 window from the Zarr for held-out events."""
-import os, numpy as np, xarray as xr, jax, haiku as hk, functools, dataclasses
+import os, numpy as np, xarray as xr, jax, jax.numpy as jnp, haiku as hk, functools, dataclasses
 from datetime import datetime, timedelta
 import gcsfs
 from graphcast import (autoregressive, casting, checkpoint, data_utils,
@@ -8,9 +8,23 @@ from graphcast import (autoregressive, casting, checkpoint, data_utils,
 from graphcast.deep_typed_graph_net import SAEInjector
 from src.patching.sae_to_jax import load_l15_sae
 class CastInjector(SAEInjector):
-    """SAEInjector that casts its output back to the input dtype (the model runs in bfloat16)."""
+    """SAEInjector reimplemented with threshold-based TopK (no scatter -> avoids the XLA
+    block-limit blow-up) and output cast back to the input dtype (model runs in bfloat16)."""
     def __call__(self, x, alpha=None):
-        return super().__call__(x, alpha).astype(x.dtype)
+        if alpha is None:
+            return x
+        p = self.params
+        xm = x - jnp.mean(x, axis=1, keepdims=True)
+        xn = xm / jnp.linalg.norm(xm, ord=2, axis=1, keepdims=True).clip(min=1e-6)
+        code_pre = jax.nn.relu((xn - p.b_pre) @ p.enc_w)
+        vals, _ = jax.lax.top_k(code_pre, p.k_active)
+        code = jnp.where(code_pre >= vals[:, -1:], code_pre, 0.0)
+        new_code = code * (1.0 + alpha[None, :])
+        if p.unit_norm_decoder:
+            dec_eff = p.dec_w / jnp.linalg.norm(p.dec_w, axis=1, keepdims=True).clip(min=1e-8)
+        else:
+            dec_eff = p.dec_w
+        return (x + (new_code - code) @ dec_eff).astype(x.dtype)
 ZARR = "gs://weatherbench2/datasets/era5/1959-2022-full_37-6h-0p25deg_derived.zarr"
 VARS = ["geopotential","specific_humidity","temperature","u_component_of_wind","v_component_of_wind",
         "vertical_velocity","2m_temperature","10m_u_component_of_wind","10m_v_component_of_wind",
