@@ -29,6 +29,23 @@ class CastInjector(SAEInjector):
         delta = (new_code - code) @ dec_eff
         # map normalized-space delta back to the raw activation (~22x) -- the missing rescale
         return (x + delta * rownorm * _CLAMP_SCALE).astype(x.dtype)
+
+
+class AddInjector(SAEInjector):
+    """Additive injection: WRITE concepts into the activation (turn on silent concepts).
+    alpha here = additive code vector beta (beta[c] = target activation level for concept c)."""
+    def __call__(self, x, alpha=None):
+        if alpha is None:
+            return x
+        p = self.params
+        xm = x - jnp.mean(x, axis=-1, keepdims=True)
+        rownorm = jnp.linalg.norm(xm, ord=2, axis=-1, keepdims=True).clip(min=1e-6)
+        if p.unit_norm_decoder:
+            dec_eff = p.dec_w / jnp.linalg.norm(p.dec_w, axis=1, keepdims=True).clip(min=1e-8)
+        else:
+            dec_eff = p.dec_w
+        delta = alpha @ dec_eff
+        return (x + delta * rownorm * _CLAMP_SCALE).astype(x.dtype)
 ZARR = "gs://weatherbench2/datasets/era5/1959-2022-full_37-6h-0p25deg_derived.zarr"
 VARS = ["geopotential","specific_humidity","temperature","u_component_of_wind","v_component_of_wind",
         "vertical_velocity","2m_temperature","10m_u_component_of_wind","10m_v_component_of_wind",
@@ -62,10 +79,10 @@ def setup(npz=NPZ_L15):
     return dict(params=ck.params, state={}, mc=ck.model_config, tc=ck.task_config,
                 diffs=_st("diffs_stddev_by_level.nc"), mean=_st("mean_by_level.nc"),
                 stddev=_st("stddev_by_level.nc"), sae=load_sae(npz))
-def make_forward(alpha, S, step=15):
+def make_forward(alpha, S, step=15, injector_cls=None):
     use = alpha is not None
     def construct(model_config, task_config):
-        inj = CastInjector(S["sae"]) if use else None
+        inj = (injector_cls or CastInjector)(S["sae"]) if use else None
         p = gc.GraphCast(model_config, task_config, mesh_sae_injector=inj,
                          mesh_sae_steps=([step] if use else None),
                          mesh_sae_node_sets=(["mesh_nodes"] if use else None),
