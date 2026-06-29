@@ -20,8 +20,7 @@ def main():
     cand = np.where(fires > 0.05)[0]; ctrl = int(cand[np.argmin(r[cand])])
     print(f"concept {C}: |r|(IVT)={r[C]:.2f}  fires={fires[C]:.0%}  |  control {ctrl}: |r|={r[ctrl]:.2f}", flush=True)
     fwd = {f"c{C}_a{a:+.1f}": P.make_forward(avec(C, a), S, LAYER) for a in ALPHAS}
-    fwd[f"ctrl_a-1.0"] = P.make_forward(avec(ctrl, -1.0), S, LAYER)
-    fwd[f"ctrl_a+2.0"] = P.make_forward(avec(ctrl,  2.0), S, LAYER)
+    fwd.update({f"ctrl_a{a:+.1f}": P.make_forward(avec(ctrl, a), S, LAYER) for a in ALPHAS})
     rows = []
     for T in TIMES:
         inp, tar, frc = P.build_inputs(T, S)
