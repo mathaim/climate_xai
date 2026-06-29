@@ -7,6 +7,10 @@ from graphcast import (autoregressive, casting, checkpoint, data_utils,
                        graphcast as gc, normalization, rollout)
 from graphcast.deep_typed_graph_net import SAEInjector
 from src.patching.sae_to_jax import load_l15_sae
+class CastInjector(SAEInjector):
+    """SAEInjector that casts its output back to the input dtype (the model runs in bfloat16)."""
+    def __call__(self, x, alpha=None):
+        return super().__call__(x, alpha).astype(x.dtype)
 ZARR = "gs://weatherbench2/datasets/era5/1959-2022-full_37-6h-0p25deg_derived.zarr"
 VARS = ["geopotential","specific_humidity","temperature","u_component_of_wind","v_component_of_wind",
         "vertical_velocity","2m_temperature","10m_u_component_of_wind","10m_v_component_of_wind",
@@ -43,7 +47,7 @@ def setup():
 def make_forward(alpha, S):
     use = alpha is not None
     def construct(model_config, task_config):
-        inj = SAEInjector(S["sae"]) if use else None
+        inj = CastInjector(S["sae"]) if use else None
         p = gc.GraphCast(model_config, task_config, mesh_sae_injector=inj,
                          mesh_sae_steps=([15] if use else None),
                          mesh_sae_node_sets=(["mesh_nodes"] if use else None),
