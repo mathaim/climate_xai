@@ -12,8 +12,9 @@ def main():
         regcnt[ri] = f.sum(0)
         mo = (AR_START + pd.to_timedelta(6 * (ti - 1), unit="h")).month.values
         for mm in range(1, 13): mocnt[mm - 1] += f[mo == mm].sum(0)
-        iz = (ivt - ivt.mean()) / (ivt.std() + 1e-9)
-        ivtc += (A * iz[:, None]).mean(0) / (A.std(0) + 1e-9); nr += 1
+        ok = np.isfinite(ivt); Ao = A[ok]
+        iz = (ivt[ok] - ivt[ok].mean()) / (ivt[ok].std() + 1e-9)
+        ivtc += (Ao * iz[:, None]).mean(0) / (Ao.std(0) + 1e-9); nr += 1
         del A, f, t
     ivtc /= nr; rate = fire.mean(0); p99 = fire[:, 99]
     def conc(c): tot = c.sum(0); fr = c / np.maximum(tot, 1); return 1 - (-(fr*np.log(fr+1e-12)).sum(0)/np.log(c.shape[0]))
