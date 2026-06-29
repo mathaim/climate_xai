@@ -3,7 +3,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a6000:1
 #SBATCH --time=2:00:00
-#SBATCH --mem=64G
+#SBATCH --mem=96G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=/home/euh7ys/climate_xai/logs/patch_L8_%j.out
 module load cuda/12.8.0

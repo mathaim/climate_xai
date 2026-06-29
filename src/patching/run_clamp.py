@@ -37,10 +37,12 @@ def main():
     fwd = {name: P.make_forward(alpha_set(idx), S, LAYER) for name, idx in conds.items()}
     rows = []
     for T in times():
+        inp, tar, frc = P.build_inputs(T, S)   # stream + prep once, reuse across conditions
         for name, fn in fwd.items():
-            mx, mn = region_ivt(P.predict(T, fn, S))
+            mx, mn = region_ivt(P.run_one(fn, inp, tar, frc))
             rows.append({"time": T, "cond": name, "ivt_max": mx, "ivt_mean": mn})
             print(T, name, round(mx, 1), flush=True)
+        del inp, tar, frc
     df = pd.DataFrame(rows); df.to_csv(f"{OUT}/bc_ar_L{LAYER}.csv", index=False)
     piv = df.pivot(index="time", columns="cond", values="ivt_max")
     for c in ["clamp_single", "control_single", "clamp_set", "control_set"]:

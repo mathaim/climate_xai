@@ -40,17 +40,13 @@ def _get_zarr():
         if ds.lat[0] > ds.lat[-1]: ds = ds.reindex(lat=ds.lat[::-1])
         _zarr = ds
     return _zarr
-_win_cache = {}
 def load_era5_window(target_time):
-    if target_time in _win_cache:
-        return _win_cache[target_time]
     tdt = datetime.strptime(target_time, "%Y-%m-%dT%H:%M")
     s = (tdt - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M")
     ds = _get_zarr().sel(time=slice(np.datetime64(s), np.datetime64(target_time)))
     ds = ds[[v for v in VARS if v in ds.data_vars]].load()
     ds = ds.assign_coords(datetime=('time', ds.time.values))
     assert len(ds.time) == 5, f"expected 5 steps, got {len(ds.time)} for {target_time}"
-    _win_cache[target_time] = ds
     return ds
 def setup(npz=NPZ_L15):
     with open(os.environ["GRAPHCAST_CHECKPOINT"], "rb") as f:
@@ -81,11 +77,15 @@ def make_forward(alpha, S, step=15):
     with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
     drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
     return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
-def predict(target_time, fwd, S):
+def build_inputs(target_time, S):
     ds = load_era5_window(target_time)
     inp, tar, frc = data_utils.extract_inputs_targets_forcings(
         ds, target_lead_times=slice("6h", "6h"), **dataclasses.asdict(S["tc"]))
+    return (inp.expand_dims('batch', axis=0),
+            tar.expand_dims('batch', axis=0) * np.nan,
+            frc.expand_dims('batch', axis=0))
+def run_one(fwd, inp, tar, frc):
     return rollout.chunked_prediction(fwd, rng=jax.random.PRNGKey(0),
-        inputs=inp.expand_dims('batch', axis=0),
-        targets_template=tar.expand_dims('batch', axis=0) * np.nan,
-        forcings=frc.expand_dims('batch', axis=0))
+        inputs=inp, targets_template=tar, forcings=frc)
+def predict(target_time, fwd, S):
+    return run_one(fwd, *build_inputs(target_time, S))
