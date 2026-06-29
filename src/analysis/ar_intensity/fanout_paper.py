@@ -27,9 +27,9 @@ def main():
             ivt, acts = data[r]; a = acts[cc]; x, y = tuning(a, ivt)
             ax = axes[ri][ci]; ax.plot(x, y, "-o", ms=3, lw=1.8, color=col)
             ax.grid(alpha=.25); ax.set_ylim(0, 0.30 if ri == 0 else 0.05)
-            ar = ivt >= AR
-            peak = float(a.max()); frate = 100 * (a[ar] > THRESH).mean() if ar.any() else 0.0
-            ax.text(0.05, 0.94, f"peak {peak:.2f}\nfires {frate:.0f}% of ARs",
+            p99fire = acts[99] > THRESH
+            peak = float(a.max()); frate = 100 * ((a > THRESH) & p99fire).sum() / max(p99fire.sum(), 1)
+            ax.text(0.05, 0.94, f"peak {peak:.2f}\nfires in {frate:.0f}% of 99's firings",
                     transform=ax.transAxes, fontsize=9.5, va="top",
                     bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7", alpha=.9))
             if ri == 0: ax.set_title(r.replace("_", " "))
