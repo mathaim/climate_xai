@@ -19,23 +19,23 @@ for s in snaps:
 
 # 10-day-max envelope for the long top panel
 df = pd.DataFrame({"A": A, "ivt": ivt}, index=pd.DatetimeIndex(dt)).sort_index()
-env = df.resample("10D").max()
+env = df.resample("MS").max()
 print("top-panel points:", len(env))
 
 fig = plt.figure(figsize=(14, 7))
 gs = fig.add_gridspec(2, 3, height_ratios=[1.3, 1.0], hspace=0.42, wspace=0.22)
 axT = fig.add_subplot(gs[0, :])
-axT.plot(env.index, env["ivt"], color="#9aa0a6", lw=0.9, alpha=0.9)
+axT.plot(env.index, env["ivt"], color="#9aa0a6", lw=1.2, alpha=0.95)
 axT.set_ylabel("region max IVT\n(kg m$^{-1}$ s$^{-1}$)", color="#5f6368", fontsize=10)
 ax2 = axT.twinx()
-ax2.plot(env.index, env["A"], color="#1b7837", lw=0.9, alpha=0.9)
+ax2.plot(env.index, env["A"], color="#1b7837", lw=1.2, alpha=0.95)
 ax2.set_ylabel("concept 1592 activation", color="#1b7837", fontsize=10)
 for s in snaps:
     axT.axvline(s, color="#c0392b", lw=1.1, ls="--")
     axT.annotate(f"{s:%Y-%m-%d}", xy=(s, 1.0), xycoords=("data", "axes fraction"),
                  xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8.5, color="#c0392b")
 axT.set_title("Concept 1592 (Plain L8, W. North America) tracks atmospheric-river IVT, 1985-2013   "
-              "(10-day maxima)", fontsize=12)
+              "(monthly maxima)", fontsize=12)
 axT.set_xlim(lo, hi); axT.xaxis.set_major_locator(mdates.YearLocator(5))
 axT.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 
