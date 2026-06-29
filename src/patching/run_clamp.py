@@ -7,7 +7,9 @@ from src.patching.sae_to_jax import latent_dim
 from src.patching.region_ivt_pred import region_ivt
 LAYER = int(os.environ.get("CLAMP_LAYER", "8")); K = 10
 NPZ = f"/scratch/euh7ys/climate_xai/patching/plain_L{LAYER}_sae.npz"
-TRACK = f"/scratch/euh7ys/climate_xai/concept_ivt/track_plain_L{LAYER}_W_N_America.npz"
+D = "/scratch/euh7ys/climate_xai/concept_ivt"
+TRACK = {8: f"{D}/track_pool_W_N_America.npz", 15: f"{D}/track_plain_L15_W_N_America.npz"}.get(
+    LAYER, f"{D}/track_plain_L{LAYER}_W_N_America.npz")
 OUT = "/scratch/euh7ys/climate_xai/patching"
 def times():
     t = datetime(2021, 11, 13, 0)
