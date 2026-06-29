@@ -15,6 +15,7 @@ for c, _ in CONCEPTS:
         ok = np.isfinite(ivt) & (A > 0); data[(c, rkey)] = (ivt[ok], A[ok])
 XMAX = max(d[0].max() for d in data.values()) * 1.03
 rowymax = {c: np.concatenate([data[(c, r)][1] for r, _ in REGIONS]).max() * 1.05 for c, _ in CONCEPTS}
+rowymax[3153] = 0.30; rowymax[3483] = 0.30   # both children share 0-0.3
 fig, axes = plt.subplots(3, 4, figsize=(15, 9.8), sharex=True, sharey="row", constrained_layout=True)
 hbs = []
 for i, (c, clab) in enumerate(CONCEPTS):
