@@ -6,7 +6,7 @@ import gcsfs
 from graphcast import (autoregressive, casting, checkpoint, data_utils,
                        graphcast as gc, normalization, rollout)
 from graphcast.deep_typed_graph_net import SAEInjector
-from src.patching.sae_to_jax import load_l15_sae
+from src.patching.sae_to_jax import load_sae, NPZ_L15
 class CastInjector(SAEInjector):
     """SAEInjector reimplemented with threshold-based TopK (no scatter -> avoids the XLA
     block-limit blow-up) and output cast back to the input dtype (model runs in bfloat16)."""
@@ -40,15 +40,19 @@ def _get_zarr():
         if ds.lat[0] > ds.lat[-1]: ds = ds.reindex(lat=ds.lat[::-1])
         _zarr = ds
     return _zarr
+_win_cache = {}
 def load_era5_window(target_time):
+    if target_time in _win_cache:
+        return _win_cache[target_time]
     tdt = datetime.strptime(target_time, "%Y-%m-%dT%H:%M")
     s = (tdt - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M")
     ds = _get_zarr().sel(time=slice(np.datetime64(s), np.datetime64(target_time)))
     ds = ds[[v for v in VARS if v in ds.data_vars]].load()
     ds = ds.assign_coords(datetime=('time', ds.time.values))
     assert len(ds.time) == 5, f"expected 5 steps, got {len(ds.time)} for {target_time}"
+    _win_cache[target_time] = ds
     return ds
-def setup():
+def setup(npz=NPZ_L15):
     with open(os.environ["GRAPHCAST_CHECKPOINT"], "rb") as f:
         ck = checkpoint.load(f, gc.CheckPoint)
     from google.cloud import storage
@@ -57,13 +61,13 @@ def setup():
         with bkt.blob("graphcast/stats/" + n).open("rb") as f: return xr.load_dataset(f).compute()
     return dict(params=ck.params, state={}, mc=ck.model_config, tc=ck.task_config,
                 diffs=_st("diffs_stddev_by_level.nc"), mean=_st("mean_by_level.nc"),
-                stddev=_st("stddev_by_level.nc"), sae=load_l15_sae())
-def make_forward(alpha, S):
+                stddev=_st("stddev_by_level.nc"), sae=load_sae(npz))
+def make_forward(alpha, S, step=15):
     use = alpha is not None
     def construct(model_config, task_config):
         inj = CastInjector(S["sae"]) if use else None
         p = gc.GraphCast(model_config, task_config, mesh_sae_injector=inj,
-                         mesh_sae_steps=([15] if use else None),
+                         mesh_sae_steps=([step] if use else None),
                          mesh_sae_node_sets=(["mesh_nodes"] if use else None),
                          mesh_sae_alpha=alpha)
         p = casting.Bfloat16Cast(p)
