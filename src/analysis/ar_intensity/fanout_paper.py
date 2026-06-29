@@ -21,12 +21,12 @@ def main():
     for r in REGN:
         t = np.load(f"{TRACK}/track_matry_{r}.npz"); ivt = t["ivt"].astype(float); ok = np.isfinite(ivt)
         data[r] = (ivt[ok], {c: t["A_max"][ok, c].astype(float) for c in cset}); del t
-    fig, axes = plt.subplots(len(ROWS), 4, figsize=(16, 9.5), sharey=True)
+    fig, axes = plt.subplots(len(ROWS), 4, figsize=(16, 9.5), sharey="row")
     for ri, (cc, label, col) in enumerate(ROWS):
         for ci, r in enumerate(REGN):
             ivt, acts = data[r]; a = acts[cc]; x, y = tuning(a, ivt)
             ax = axes[ri][ci]; ax.plot(x, y, "-o", ms=3, lw=1.8, color=col)
-            ax.grid(alpha=.25); ax.set_ylim(0, 0.30)
+            ax.grid(alpha=.25); ax.set_ylim(0, 0.30 if ri == 0 else 0.05)
             ar = ivt >= AR
             peak = float(a.max()); frate = 100 * (a[ar] > THRESH).mean() if ar.any() else 0.0
             ax.text(0.05, 0.94, f"peak {peak:.2f}\nfires {frate:.0f}% of ARs",
