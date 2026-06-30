@@ -16,14 +16,15 @@ for k in range(n):
     cc = int(concepts[k]); v = foot[k]
     ax = fig.add_subplot(gs[k, 0], projection=ccrs.Robinson())
     ax.set_global(); ax.add_feature(cfeature.LAND, facecolor="#d9d2c5", zorder=0)
-    ax.add_feature(cfeature.OCEAN, facecolor="#eef2f4", zorder=0); ax.coastlines("110m", color="#7a7060", lw=.4)
-    ax.add_feature(cfeature.BORDERS, lw=.25, edgecolor="#999"); ax.gridlines(lw=.3, color="#aaa", alpha=.6)
+    ax.add_feature(cfeature.OCEAN, facecolor="#eef2f4", zorder=0); ax.coastlines("110m", color="#333333", lw=.7)
+    ax.add_feature(cfeature.BORDERS, lw=.3, edgecolor="#888"); ax.gridlines(lw=.3, color="#aaa", alpha=.6)
     for _r, _c in REGIONS.items():
         _la = _c["lat"]
         for _x0, _x1 in _c["lon"]:
             ax.plot([cv(_x0), cv(_x1), cv(_x1), cv(_x0), cv(_x0)], [_la[0], _la[0], _la[1], _la[1], _la[0]],
                     c="#1f6f8b", lw=1.0, transform=PC, zorder=5)
-    sc = ax.scatter(lon, nlat, c=v, s=6, cmap="YlOrBr", vmin=0, vmax=max(np.percentile(v, 99.5), 1e-6),
+    vmx = max(np.percentile(v, 99.5), 1e-6); msk = v > 0.02 * vmx
+    sc = ax.scatter(lon[msk], nlat[msk], c=v[msk], s=7, cmap="YlOrBr", vmin=0, vmax=vmx,
                     transform=PC, edgecolor="none", zorder=3)
     ax.set_title(LAB.get(cc, str(cc)), fontsize=12, loc="left")
     fig.colorbar(sc, ax=ax, shrink=0.6, pad=0.02, label="firing frequency")
