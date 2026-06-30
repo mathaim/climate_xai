@@ -16,7 +16,7 @@ for k in range(n):
     cc = int(concepts[k]); v = foot[k]
     ax = fig.add_subplot(gs[k, 0], projection=ccrs.Robinson())
     ax.set_global(); ax.add_feature(cfeature.LAND, facecolor="#d9d2c5", zorder=0)
-    ax.add_feature(cfeature.OCEAN, facecolor="#eef2f4", zorder=0); ax.coastlines("110m", color="#7a7060", lw=.4)
+    ax.add_feature(cfeature.OCEAN, facecolor="#eef2f4", zorder=0); ax.coastlines("110m", color="#7a7060", lw=.4); ax.add_feature(cfeature.BORDERS, lw=0.25, edgecolor="#999")
     ax.gridlines(lw=0.3, color="#aaa", alpha=0.6)
     for _r, _c in REGIONS.items():
         _la = _c["lat"]
