@@ -30,6 +30,4 @@ for k in range(n):
     axm = fig.add_subplot(gs[k, 1]); axm.bar(range(12), mclim[k], color="#8c6d3f")
     axm.set_xticks(range(12)); axm.set_xticklabels(MON, fontsize=7)
     axm.tick_params(labelsize=7)
-fig.suptitle("1308 fires only when 512 fires  (P(512|1308)=100%);  512 also fires over S. America without 1308  (P(1308|512)=23%)",
-             fontsize=11, y=1.0)
 fig.savefig("/scratch/euh7ys/climate_xai/plots/pair_512_1308.png", dpi=150, bbox_inches="tight"); print("saved")
