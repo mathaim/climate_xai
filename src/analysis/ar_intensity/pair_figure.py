@@ -26,11 +26,10 @@ for k in range(n):
     vmx = max(np.percentile(v, 99.5), 1e-6); msk = v > 0.02 * vmx
     sc = ax.scatter(lon[msk], nlat[msk], c=v[msk], s=7, cmap="YlOrBr", vmin=0, vmax=vmx,
                     transform=PC, edgecolor="none", zorder=3)
-    ax.set_title(LAB.get(cc, str(cc)), fontsize=12, loc="left")
-    fig.colorbar(sc, ax=ax, shrink=0.6, pad=0.02, label="firing frequency")
+    fig.colorbar(sc, ax=ax, shrink=0.6, pad=0.02)
     axm = fig.add_subplot(gs[k, 1]); axm.bar(range(12), mclim[k], color="#8c6d3f")
     axm.set_xticks(range(12)); axm.set_xticklabels(MON, fontsize=7)
-    axm.set_title("firing freq by month", fontsize=8.5); axm.tick_params(labelsize=7)
+    axm.tick_params(labelsize=7)
 fig.suptitle("1308 fires only when 512 fires  (P(512|1308)=100%);  512 also fires over S. America without 1308  (P(1308|512)=23%)",
              fontsize=11, y=1.0)
 fig.savefig("/scratch/euh7ys/climate_xai/plots/pair_512_1308.png", dpi=150, bbox_inches="tight"); print("saved")
