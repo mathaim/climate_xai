@@ -14,7 +14,7 @@ o = np.argsort(dt); dt, A, ivt = dt[o], A[o], ivt[o]
 lo, hi = DT.datetime(1985, 1, 1), DT.datetime(2013, 12, 31)
 m = (dt >= lo) & (dt <= hi); dt, A, ivt = dt[m], A[m], ivt[m]
 snaps = [DT.datetime(1986, 1, 12, 12), DT.datetime(2000, 11, 23, 0), DT.datetime(2012, 11, 28, 6)]
-env = pd.DataFrame({"A": A, "ivt": ivt}, index=pd.DatetimeIndex(dt)).sort_index().resample("2MS").max()
+env = pd.DataFrame({"A": A, "ivt": ivt}, index=pd.DatetimeIndex(dt)).sort_index().resample("2MS").mean()
 print("points:", len(env))
 
 fig, axT = plt.subplots(figsize=(14, 4.6))
