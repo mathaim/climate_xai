@@ -19,7 +19,7 @@ print("points:", len(env))
 
 fig, axT = plt.subplots(figsize=(14, 4.6))
 axT.plot(env.index, env["ivt"], color="#9aa0a6", lw=1.3)
-axT.set_ylabel("region max IVT\n(kg m$^{-1}$ s$^{-1}$)", color="#5f6368", fontsize=11)
+axT.set_ylabel("region IVT\n(kg m$^{-1}$ s$^{-1}$)", color="#5f6368", fontsize=11)
 axT.tick_params(axis="y", labelcolor="#5f6368")
 ax2 = axT.twinx()
 ax2.plot(env.index, env["A"], color="#1b7837", lw=1.3)
