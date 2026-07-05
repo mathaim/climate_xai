@@ -14,16 +14,16 @@ def main():
     m, c, fmin, frng = load_sae(SAE, dev)
     files = sorted(glob.glob(f"{c['act']}/layer0008_*.npy"))
     rng = np.random.default_rng(0); sel = [files[i] for i in rng.choice(len(files), min(N, len(files)), replace=False)]
-    fc = np.zeros((4096, nnode), np.float32); cnt = 0
+    fc = np.zeros((nnode, 4096), np.float32); cnt = 0
     for i, f in enumerate(sel):
         a = np.load(f, mmap_mode="r"); x = np.ascontiguousarray(a).astype(np.float32).reshape(a.shape[0], -1)
         if fmin is not None: x = (2.0 * (x - fmin) / frng - 1.0).astype(np.float32)
         with torch.no_grad(): acts = encode(m, c["arch"], torch.from_numpy(x).to(dev)).cpu().numpy()
-        fc += (acts > THRESH).T; cnt += 1
+        fc += (acts > THRESH); cnt += 1
         if (i + 1) % 50 == 0: print(f"  {i+1}/{len(sel)}", flush=True)
-    tot = fc.sum(1); ntop = max(1, nnode // 100)
-    conc = np.partition(fc, -ntop, axis=1)[:, -ntop:].sum(1) / np.maximum(tot, 1)   # frac in top-1% nodes
-    peak = fc.argmax(1)
+    tot = fc.sum(0); ntop = max(1, nnode // 100)
+    conc = np.partition(fc, -ntop, axis=0)[-ntop:, :].sum(0) / np.maximum(tot, 1)   # frac in top-1% nodes
+    peak = fc.argmax(0)
     np.savez(OUT, conc=conc, tot=tot, peaklat=nlat[peak], peaklon=nlon[peak])
     order = [c2 for c2 in np.argsort(-conc) if tot[c2] > 200][:30]
     print(f"{'concept':>7} {'conc':>5} {'fires':>8} {'peak lat':>9} {'peak lon':>9}")

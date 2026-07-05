@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=rscan
 #SBATCH --partition=standard
-#SBATCH --time=00:20:00
+#SBATCH --time=00:50:00
 #SBATCH --mem=16G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=/home/euh7ys/climate_xai/logs/rscan_%j.out
