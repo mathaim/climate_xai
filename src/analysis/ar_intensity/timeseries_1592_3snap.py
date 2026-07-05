@@ -13,7 +13,7 @@ dt = np.array([index_to_datetime(int(t)) for t in tindex])
 o = np.argsort(dt); dt, A, ivt = dt[o], A[o], ivt[o]
 lo, hi = DT.datetime(1985, 1, 1), DT.datetime(2013, 12, 31)
 m = (dt >= lo) & (dt <= hi); dt, A, ivt = dt[m], A[m], ivt[m]
-snaps = [DT.datetime(1986, 1, 12, 12), DT.datetime(2000, 11, 23, 0), DT.datetime(2012, 11, 28, 6)]
+snaps = [DT.datetime(1986, 1, 13, 0), DT.datetime(1995, 12, 12, 6), DT.datetime(2006, 11, 19, 12)]
 env = pd.DataFrame({"A": A, "ivt": ivt}, index=pd.DatetimeIndex(dt)).sort_index().resample("2MS").mean()
 print("points:", len(env))
 
