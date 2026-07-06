@@ -4,7 +4,7 @@ from src.analysis.ar_intensity.sae_features import load_sae, encode, act_file
 from src.analysis.ar_intensity.regions import REGIONS, index_to_datetime
 from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, region_node_setup, ERA5_DIR, NPZ
 PIPE="/project/AikyamLab/madelyn/GraphCast/AtmosphericRivers/intensity_pipeline"
-OUT="results/ar_intensity/baseline"; SAE="plain_L8"; N_AR=800
+OUT="results/ar_intensity/baseline"; SAE="plain_L8"; N_AR=100
 CONCEPT={"W_N_America":3069,"W_Europe":1008,"W_S_America":1115,"E_Australia":975}
 def main():
     os.makedirs(OUT,exist_ok=True); dev="cuda" if torch.cuda.is_available() else "cpu"; print("device",dev,flush=True)

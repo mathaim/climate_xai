@@ -9,9 +9,11 @@ ONI = {1980:0.59,1981:-0.26,1982:-0.05,1983:2.18,1984:-0.60,1985:-1.04,1986:-0.4
        1996:-0.90,1997:-0.50,1998:2.24,1999:-1.55,2000:-1.66,2001:-0.68,2002:-0.15,2003:0.92,
        2004:0.37,2005:0.64,2006:-0.85,2007:0.66,2008:-1.64,2009:-0.85,2010:1.50,2011:-1.31,
        2012:-0.72,2013:-0.29,2014:-0.28,2015:0.69,2016:2.63,2017:-0.19}
+import sys
+PREFIX=sys.argv[1] if len(sys.argv)>1 else "track_matry"
 def main():
     for r in REGIONS:
-        t = np.load(f"{TRACK}/track_matry_{r}.npz"); A = t["A_max"]; ti = t["tindex"]
+        t = np.load(f"{TRACK}/{PREFIX}_{r}.npz"); A = t["A_max"]; ti = t["tindex"]
         d = AR_START + pd.to_timedelta(6*(ti-1), unit="h"); yr = d.year.values; mo = d.month.values
         djfy = yr + (mo==12); djf = np.isin(mo,[12,1,2])
         years = [y for y in sorted(set(djfy[djf].tolist())) if y in ONI]

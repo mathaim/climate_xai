@@ -9,7 +9,7 @@ NAME={"W_N_America":"Western North America","W_Europe":"Western Europe",
       "W_S_America":"Western South America","E_Australia":"Eastern Australia"}
 COLORS={"W_N_America":"#c0392b","W_Europe":"#2b6cb0","W_S_America":"#27ae60","E_Australia":"#8e44ad"}
 ARCH=[("plain","Plain SAE"),("matry","Matryoshka SAE")]
-plt.rcParams.update({"font.size":13,"axes.titlesize":15,"axes.labelsize":14,"legend.fontsize":10})
+plt.rcParams.update({"font.size":13,"axes.titlesize":15,"axes.labelsize":14,"legend.fontsize":11})
 def sets(arch,layer):
     SAE=f"{arch}_L{layer}"; no=np.load(f"{OUT}/nonar_rates_{SAE}.npz")
     F,md=load(SAE,f"region_{DEF}"); reg=md.region.to_numpy()
@@ -19,7 +19,7 @@ def sets(arch,layer):
     nreg=np.vstack([act[r] for r in REGIONS]).sum(0)
     return ({r:int((act[r]&(nreg==1)).sum()) for r in REGIONS},{r:int((act[r]&(nreg>=3)).sum()) for r in REGIONS})
 def main():
-    fig,ax=plt.subplots(1,2,figsize=(14,5.6),sharey=True)
+    fig,ax=plt.subplots(1,2,figsize=(14,6.2),sharey=True)
     for a,(arch,title) in zip(ax,ARCH):
         LOC={r:[] for r in REGIONS}; GLO={r:[] for r in REGIONS}
         for L in LAYERS:
@@ -33,8 +33,9 @@ def main():
     reg_h=[Line2D([0],[0],color=COLORS[r],lw=2.6,label=NAME[r]) for r in REGIONS]
     sty_h=[Line2D([0],[0],color="#444",lw=2.6,ls="-",label="Local (1 region)"),
            Line2D([0],[0],color="#444",lw=2.6,ls=":",label="Global ($\\geq$3 regions)")]
-    l1=ax[0].legend(handles=reg_h,loc="upper left",title="Region"); ax[0].add_artist(l1)
-    ax[1].legend(handles=sty_h,loc="upper left")
-    fig.tight_layout(); fig.savefig(f"{PLOTS}/local_global_by_region.png",dpi=200,bbox_inches="tight")
+    fig.tight_layout(rect=[0,0.16,1,1])
+    leg1=fig.legend(handles=reg_h,loc="lower center",bbox_to_anchor=(0.5,0.07),ncol=4,frameon=False,title="Region")
+    fig.legend(handles=sty_h,loc="lower center",bbox_to_anchor=(0.5,0.0),ncol=2,frameon=False)
+    fig.savefig(f"{PLOTS}/local_global_by_region.png",dpi=200,bbox_inches="tight")
     print("SAVED",f"{PLOTS}/local_global_by_region.png")
 if __name__=="__main__": main()
