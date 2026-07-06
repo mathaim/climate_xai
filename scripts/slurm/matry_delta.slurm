@@ -7,4 +7,4 @@
 #SBATCH --output=/home/euh7ys/climate_xai/logs/mdelta_%j.out
 cd /home/euh7ys/climate_xai
 echo "TS=$TS REGION=$REGION CONCEPT=$CONCEPT"
-PYTHONPATH=. /home/euh7ys/miniconda3/bin/python -u src/analysis/ar_intensity/matry_delta.py
+PYTHONPATH=. /home/euh7ys/miniconda3/bin/python -u src/patching/matry_delta.py
