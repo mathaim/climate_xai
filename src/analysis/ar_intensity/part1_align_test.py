@@ -34,3 +34,7 @@ def main():
             if mk.sum() > 0: ar.append(float(iv[mk > 0].mean()))
             if (mk == 0).sum() > 0: no.append(float(iv[mk == 0].mean()))
         print(f"{name}: n={len(cs)} meancorr={np.mean(cs):+.3f}  IVT ar={np.mean(ar):.0f} no={np.mean(no):.0f}", flush=True)
+
+
+if __name__ == "__main__":
+    main()
