@@ -2,7 +2,7 @@
 without it. Uses the aligned region masks (ordinal 6-hourly from 1979-01-01). Base env, SLURM."""
 import os, glob, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode
-from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, ERA5_DIR
+from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, node_ivt, ERA5_DIR
 from src.analysis.ar_intensity.regions import REGIONS, AR_START
 SAE = "matry_L8"; THRESH = 0.1; N = int(os.environ.get("GLOBAL_N", "400")); REG = "W_S_America"
 MASKS = "/scratch/euh7ys/climate_xai/ar_region_masks.npz"
@@ -25,10 +25,14 @@ def main():
     files = sorted(glob.glob(f"{c['act']}/layer0008_*.npy"))
     rng = np.random.default_rng(0); sel = [files[i] for i in rng.choice(len(files), min(N, len(files)), replace=False)]
     fire_AR = np.zeros(4096); fire_no = np.zeros(4096); act_AR = np.zeros(4096); cntAR = 0; cntNO = 0; used = 0
+    ivtAR = 0.0; ivtNO = 0.0
     for f in sel:
         dt = pdt(os.path.basename(f)); k = int((dt - AR_START).total_seconds() // 21600)
         if k < 0 or k >= M.shape[0]: continue
         ar = M[k][ilat, ilon] > 0
+        try: era = np.load(f"{ERA5_DIR}/era5_inputs_{dt.strftime('%Y-%m-%dT%H-%M')}.npy")
+        except FileNotFoundError: continue
+        ivn = node_ivt(era, qi, ui, vi, levels)[reg]; ivtAR += float(ivn[ar].sum()); ivtNO += float(ivn[~ar].sum())
         a = np.load(f, mmap_mode="r"); x = np.ascontiguousarray(a).astype(np.float32).reshape(a.shape[0], -1)
         if fmin is not None: x = (2.0 * (x - fmin) / frng - 1.0).astype(np.float32)
         with torch.no_grad(): A = np.maximum(encode(m, c["arch"], torch.from_numpy(x).to("cpu")).cpu().numpy()[reg], 0)
@@ -39,6 +43,7 @@ def main():
     np.savez(OUT, fire_AR=fire_AR, fire_no=fire_no, act_AR=act_AR, cntAR=cntAR, cntNO=cntNO, used=used)
     pAR = fire_AR / max(cntAR, 1); pNO = fire_no / max(cntNO, 1); enr = pAR / np.maximum(pNO, 1e-9)
     print(f"\nused {used} | AR-node samples {cntAR}, no-AR {cntNO}", flush=True)
+    print(f"ALIGNMENT CHECK  mean IVT: AR-nodes {ivtAR/max(cntAR,1):.0f}  vs  no-AR-nodes {ivtNO/max(cntNO,1):.0f}", flush=True)
     print(f"{'con':>6}{'P(f|AR)':>10}{'P(f|noAR)':>11}{'enrich':>9}")
     for cc in [1829, 3481, 340]:
         print(f"{cc:>6}{pAR[cc]:>10.4f}{pNO[cc]:>11.4f}{enr[cc]:>9.1f}")
