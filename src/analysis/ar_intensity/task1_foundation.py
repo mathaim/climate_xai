@@ -6,7 +6,7 @@ from src.analysis.ar_intensity.sae_features import load_sae, encode
 from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, node_ivt, ERA5_DIR
 from src.analysis.ar_intensity.regions import REGIONS
 SAE = "matry_L8"; THRESH = 0.1; N = int(os.environ.get("GLOBAL_N", "400")); REG = "W_S_America"
-CHILDREN = [3481, 3948, 3675]
+CHILDREN = [int(x) for x in os.environ.get("CHILDREN", "664,1829,3481").split(",")]
 BINS = np.array([0, 100, 200, 300, 400, 500, 600, 750, 900, 1100, 1400, 1800, 2500])
 OUT = "/scratch/euh7ys/climate_xai/concept_ivt/task1_foundation.npz"
 def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy", ""), "%Y-%m-%dT%H-%M")
