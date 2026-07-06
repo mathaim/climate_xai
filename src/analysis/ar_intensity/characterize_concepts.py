@@ -3,8 +3,8 @@ import os, glob, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode
 from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, node_ivt, ERA5_DIR
 SAE = "matry_L8"; THRESH = 0.1; N = int(os.environ.get("GLOBAL_N", "400"))
-CONCEPTS = [int(x) for x in os.environ.get("CONCEPTS", "340,3112,3481,2858,3675,3948,109,2548,490,1491,1807").split(",")]
-OUT = "/scratch/euh7ys/climate_xai/concept_ivt/characterize_wsa.npz"
+CONCEPTS = [int(x) for x in os.environ.get("CONCEPTS", "1829,3481,340").split(",")]
+OUT = "/scratch/euh7ys/climate_xai/concept_ivt/characterize_ar.npz"
 conv = lambda x: x - 360 if x > 180 else x
 def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy", ""), "%Y-%m-%dT%H-%M")
 def main():
