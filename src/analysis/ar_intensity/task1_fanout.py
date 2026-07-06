@@ -18,8 +18,8 @@ def klass(c):
     return "AR-intensity" if ivt50(c) >= 600 else "AR-presence"
 cof = cofire[:, pidx, :].sum(0); fireC = rate * used * nnode
 Pp = cof / np.maximum(fireC, 1)   # P(1829 | C): ~1 => C contained in 1829
-cand = [c for c in np.argsort(-Pp) if c != PARENT and rate[c] < rate[PARENT] and Pp[c] > 0.5][:20]
+cand = [c for c in np.argsort(-Pp) if c != PARENT][:15]
 print(f"parent {PARENT} ({klass(PARENT)}, rate {rate[PARENT]:.4f}, regfrac {regfrac[PARENT]:.2f}, regfire {int(regfire[PARENT])})")
-print(f"{'C':>5}{'P(1829|C)':>10}{'rate':>8}{'regfrac':>8}{'com_ivt':>8}{'ivt50':>7}{'class':>13}{'regfire':>8}")
+print(f"{'C':>5}{'P(1829|C)':>10}{'rate':>8}{'regfrac':>8}{'com_ivt':>8}{'ivt50':>7}{'class':>13}{'regfire':>8}{'lift':>9}")
 for c in cand:
-    print(f"{c:>5}{Pp[c]:>10.2f}{rate[c]:>8.4f}{regfrac[c]:>8.2f}{com[c]:>8.0f}{ivt50(c):>7.0f}{klass(c):>13}{int(regfire[c]):>8}")
+    print(f"{c:>5}{Pp[c]:>10.2f}{rate[c]:>8.4f}{regfrac[c]:>8.2f}{com[c]:>8.0f}{ivt50(c):>7.0f}{klass(c):>13}{int(regfire[c]):>8}{Pp[c]/max(rate[PARENT],1e-9):>9.0f}")
