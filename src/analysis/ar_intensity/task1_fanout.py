@@ -1,11 +1,11 @@
 """Children of the AR parent 1829: concepts contained in it (P(1829|C) high, narrower), with AR class.
 Uses the existing foundation encode (1829's co-firing with all concepts is already recorded)."""
-import numpy as np
+import os, numpy as np
 D = np.load("/scratch/euh7ys/climate_xai/concept_ivt/task1_foundation.npz")
 cofire, rate_ts = D["cofire_ts"], D["rate_ts"]; tun_fire, tun_cnt = D["tun_fire"], D["tun_cnt"]
 regmass, actsum = D["regmass"], D["actsum"]; bins = D["bins"]; CH = [int(x) for x in D["children"]]
 used = int(D["used"]); nnode = int(D["nnode"]); ctr = (bins[:-1] + bins[1:]) / 2
-PARENT = 1829; pidx = CH.index(PARENT)
+PARENT = int(os.environ.get('PARENT', '1829')); pidx = CH.index(PARENT)
 rate = rate_ts.sum(0) / (used * nnode); regfrac = regmass / np.maximum(actsum, 1e-9)
 tun_r = tun_fire / np.maximum(tun_cnt[None, :], 1); regfire = tun_fire.sum(1)
 com = (tun_r * ctr[None, :]).sum(1) / np.maximum(tun_r.sum(1), 1e-9)
