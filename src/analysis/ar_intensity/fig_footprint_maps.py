@@ -42,7 +42,7 @@ def main():
     axA.scatter(P[1829]["lon"], P[1829]["lat"], s=6, c="#2980b9", alpha=0.08, edgecolor="none", label="1829 parent (all firings)", **TK())
     s = P[3481]["act"] > np.quantile(P[3481]["act"], 0.5)
     axA.scatter(P[3481]["lon"][s], P[3481]["lat"][s], s=12, c="#c0392b", edgecolor="none", label="3481 child (strong firings)", **TK())
-    coast(axA, exA); axA.set_title("A. 1829 (blue) contains 3481 (red)\nsub-AR coastal moisture, S. Chile ~47-49S"); axA.legend(loc="upper left", fontsize=8)
+    coast(axA, exA); axA.legend(loc="upper left", fontsize=8)
     figA.savefig(f"{OUT}/nesting_map_final.png", dpi=170, bbox_inches="tight"); print("saved nesting_map_final.png")
     # Result B: 99 global core contains regional AR children
     exB = [-180, 180, -75, 75]; figB = plt.figure(figsize=(12, 6)); axB = figB.add_subplot(111, **proj)
@@ -50,7 +50,7 @@ def main():
     for cc, col, lab in [(3392, "#c0392b", "3392 NW-Pacific AR (IVT 702)"), (1454, "#2980b9", "1454 S-Hemis AR (IVT 522)"), (2722, "#27ae60", "2722 S-Indian AR (IVT 395)")]:
         s = P[cc]["act"] > np.quantile(P[cc]["act"], 0.9)
         axB.scatter(P[cc]["lon"][s], P[cc]["lat"][s], s=9, c=col, edgecolor="none", label=lab, **TK())
-    coast(axB, exB); axB.set_title("B. 99 global AR-intensity core (grey) contains regional strong-AR children"); axB.legend(loc="lower left", fontsize=8)
+    coast(axB, exB); axB.legend(loc="lower left", fontsize=8)
     figB.savefig(f"{OUT}/ar_hierarchy_map.png", dpi=170, bbox_inches="tight"); print("saved ar_hierarchy_map.png")
 if __name__ == "__main__":
     main()

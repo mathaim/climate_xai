@@ -16,6 +16,5 @@ for c, col, lab in [(99, "#c0392b", "99  global AR-intensity"), (1829, "#2980b9"
 ax.axvspan(0, 319, alpha=0.08, color="gray"); ax.axvline(319, color="0.5", ls="--")
 ax.text(150, 0.95, "sub-AR (< p50)", fontsize=9, color="0.4")
 ax.set_xlabel("AR intensity, region max IVT (kg m$^{-1}$ s$^{-1}$)"); ax.set_ylabel("region firing (normalized)")
-ax.set_title("Only 99 scales with AR intensity; the nesting concepts 1829/3481/340 are flat")
 ax.legend(fontsize=9); ax.grid(alpha=.3); fig.tight_layout()
 fig.savefig("/scratch/euh7ys/climate_xai/plots/ar_intensity_doseresponse.png", dpi=170, bbox_inches="tight"); print("saved dose-response")
