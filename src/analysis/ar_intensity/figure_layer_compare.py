@@ -23,8 +23,10 @@ for cc, col, lab in zip(CH8, COL, LAB):
     lo, la = strong(D8, cc); ax.scatter(lo, la, s=20, c=col, edgecolor="k", lw=0.3, transform=proj, zorder=5, label=f"{cc}  {lab}")
 ax.legend(fontsize=8, loc="upper left")
 ax = axes[1]; base(ax, "L15")
-for i, pc in enumerate([1536, 1675, 756]):
-    lo, la = strong(D15, pc); ax.scatter(lo, la, s=12, c="0.5", alpha=0.6, transform=proj, zorder=2, label="340 fragments (1536, 1675, 756)" if i == 0 else None)
+nL15 = np.concatenate([D15[f"n_{pc}"] for pc in [1536, 1675, 756]])
+H15, xe15, ye15 = np.histogram2d(nlon[nL15], nlat[nL15], bins=[np.linspace(EXT[0], EXT[1], 70), np.linspace(EXT[2], EXT[3], 90)])
+pm15 = ax.pcolormesh(xe15, ye15, H15.T, cmap="Blues", alpha=0.7, shading="auto", transform=proj, zorder=1)
+fig.colorbar(pm15, ax=ax, shrink=0.55, pad=0.02, label="340 fragments (1536,1675,756) firing frequency")
 for cc, col, lab in zip(CH15, COL, LAB):
     lo, la = strong(D15, cc); ax.scatter(lo, la, s=20, c=col, edgecolor="k", lw=0.3, transform=proj, zorder=5, label=f"{cc}  {lab}")
 ax.legend(fontsize=8, loc="upper left")
