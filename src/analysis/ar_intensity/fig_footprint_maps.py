@@ -34,6 +34,7 @@ def main():
         if (k + 1) % 100 == 0: print(f"{k+1}/{len(sel)}")
     for cc in CC:
         for kk in P[cc]: P[cc][kk] = np.asarray(P[cc][kk])
+    np.savez("/scratch/euh7ys/climate_xai/concept_ivt/footprint_points.npz", **{f"{cc}_{k}": P[cc][k] for cc in CC for k in P[cc]})
     proj = {"projection": ccrs.PlateCarree()} if HAVE else {}
     # Result A: 1829 (broad) contains 3481 (subset), S America
     exA = [-95, -55, -60, -18]; figA = plt.figure(figsize=(6, 7)); axA = figA.add_subplot(111, **proj)
@@ -44,7 +45,7 @@ def main():
     figA.savefig(f"{OUT}/nesting_map_final.png", dpi=170, bbox_inches="tight"); print("saved nesting_map_final.png")
     # Result B: 99 global core contains regional AR children
     exB = [-180, 180, -75, 75]; figB = plt.figure(figsize=(12, 6)); axB = figB.add_subplot(111, **proj)
-    axB.scatter(P[99]["lon"], P[99]["lat"], s=1, c="0.55", alpha=0.03, edgecolor="none", label="99 global AR-intensity core", **TK())
+    axB.scatter(P[99]["lon"], P[99]["lat"], s=5, c="0.5", alpha=0.14, edgecolor="none", rasterized=True, label="99 global AR-intensity core", **TK())
     for cc, col, lab in [(3392, "#c0392b", "3392 NW-Pacific AR (IVT 702)"), (1454, "#2980b9", "1454 S-Hemis AR (IVT 522)"), (2722, "#27ae60", "2722 S-Indian AR (IVT 395)")]:
         s = P[cc]["act"] > np.quantile(P[cc]["act"], 0.9)
         axB.scatter(P[cc]["lon"][s], P[cc]["lat"][s], s=9, c=col, edgecolor="none", label=lab, **TK())
