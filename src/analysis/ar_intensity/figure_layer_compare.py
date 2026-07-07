@@ -17,13 +17,14 @@ def base(ax, title):
     ax.set_title(title)
 ax = axes[0]; base(ax, "L8")
 n = D8["n_340"]; H, xe, ye = np.histogram2d(nlon[n], nlat[n], bins=[np.linspace(EXT[0], EXT[1], 70), np.linspace(EXT[2], EXT[3], 90)])
-ax.pcolormesh(xe, ye, H.T, cmap="Blues", alpha=0.7, shading="auto", transform=proj, zorder=1)
+pm = ax.pcolormesh(xe, ye, H.T, cmap="Blues", alpha=0.7, shading="auto", transform=proj, zorder=1)
+fig.colorbar(pm, ax=ax, shrink=0.55, pad=0.02, label="340 (parent) firing frequency")
 for cc, col, lab in zip(CH8, COL, LAB):
     lo, la = strong(D8, cc); ax.scatter(lo, la, s=20, c=col, edgecolor="k", lw=0.3, transform=proj, zorder=5, label=f"{cc}  {lab}")
 ax.legend(fontsize=8, loc="upper left")
 ax = axes[1]; base(ax, "L15")
-for pc in [1536, 1675, 756]:
-    lo, la = strong(D15, pc); ax.scatter(lo, la, s=9, c="0.5", alpha=0.5, transform=proj, zorder=2)
+for i, pc in enumerate([1536, 1675, 756]):
+    lo, la = strong(D15, pc); ax.scatter(lo, la, s=12, c="0.5", alpha=0.6, transform=proj, zorder=2, label="340 fragments (1536, 1675, 756)" if i == 0 else None)
 for cc, col, lab in zip(CH15, COL, LAB):
     lo, la = strong(D15, cc); ax.scatter(lo, la, s=20, c=col, edgecolor="k", lw=0.3, transform=proj, zorder=5, label=f"{cc}  {lab}")
 ax.legend(fontsize=8, loc="upper left")
