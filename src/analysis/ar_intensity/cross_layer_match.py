@@ -4,8 +4,8 @@ import os, glob, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode, SAES
 from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, ERA5_DIR
 DEV = "cpu"; THRESH = 0.1; N = int(os.environ.get("GLOBAL_N", "200"))
-WSA = [340, 3481, 3948, 3675]  # L8 parent + 3 children
-OUT = "/scratch/euh7ys/climate_xai/concept_ivt/cross_layer.npz"
+WSA = [int(x) for x in os.environ.get("CONCEPTS","340,3481,3948,3675").split(",")]
+OUT = os.environ.get("OUT","/scratch/euh7ys/climate_xai/concept_ivt/cross_layer.npz")
 conv = lambda x: x - 360 if x > 180 else x
 def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy", ""), "%Y-%m-%dT%H-%M")
 def firing(f, m, c, fmin, frng):

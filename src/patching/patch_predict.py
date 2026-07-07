@@ -162,3 +162,39 @@ def make_field_forward(field, S, step=8, gate_x8=None):
     with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
     drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
     return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
+
+
+class FieldCaptureInjector(SAEInjector):
+    """Inject a fixed field at the FIRST configured mesh_sae_step; capture (pass-through) the
+    activation at the SECOND step into `holder`. Use with mesh_sae_steps=[inject_step, capture_step];
+    call ordering is resolved at trace time via a Python counter (inject@8 then capture@15)."""
+    def __init__(self, field, holder):
+        try: super().__init__(field)
+        except Exception: pass
+        self.field = field; self.holder = holder; self._calls = 0
+    def __call__(self, x, alpha=None):
+        if alpha is None:
+            return x
+        self._calls += 1
+        if self._calls == 1:
+            return (x + self.field).astype(x.dtype)
+        jax.debug.callback(lambda xv: self.holder.append(np.asarray(xv, np.float32)), x)
+        return x
+
+
+def make_field_capture_forward(field, S, holder, inject_step=8, capture_step=15):
+    def construct(model_config, task_config):
+        inj = FieldCaptureInjector(field, holder)
+        p = gc.GraphCast(model_config, task_config, mesh_sae_injector=inj,
+                         mesh_sae_steps=[inject_step, capture_step], mesh_sae_node_sets=["mesh_nodes"], mesh_sae_alpha=jnp.zeros(1))
+        p = casting.Bfloat16Cast(p)
+        p = normalization.InputsAndResiduals(p, diffs_stddev_by_level=S["diffs"],
+                                             mean_by_level=S["mean"], stddev_by_level=S["stddev"])
+        return autoregressive.Predictor(p, gradient_checkpointing=True)
+    @hk.transform_with_state
+    def run_forward(model_config, task_config, inputs, targets_template, forcings):
+        return construct(model_config, task_config)(inputs, targets_template=targets_template, forcings=forcings)
+    with_configs = lambda fn: functools.partial(fn, model_config=S["mc"], task_config=S["tc"])
+    with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
+    drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
+    return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
