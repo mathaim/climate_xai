@@ -35,6 +35,7 @@ def main():
     for cc in CC:
         for kk in P[cc]: P[cc][kk] = np.asarray(P[cc][kk])
     np.savez("/scratch/euh7ys/climate_xai/concept_ivt/footprint_points.npz", **{f"{cc}_{k}": P[cc][k] for cc in CC for k in P[cc]})
+    np.savez("/scratch/euh7ys/climate_xai/concept_ivt/footprint_points.npz", **{f"{cc}_{k}": P[cc][k] for cc in CC for k in P[cc]})
     proj = {"projection": ccrs.PlateCarree()} if HAVE else {}
     # Result A: 1829 (broad) contains 3481 (subset), S America
     exA = [-95, -55, -60, -18]; figA = plt.figure(figsize=(6, 7)); axA = figA.add_subplot(111, **proj)
