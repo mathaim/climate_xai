@@ -110,3 +110,55 @@ def run_one(fwd, inp, tar, frc):
         inputs=inp, targets_template=tar, forcings=frc)
 def predict(target_time, fwd, S):
     return run_one(fwd, *build_inputs(target_time, S))
+
+
+# ---- Matryoshka field injection: add a precomputed raw-activation delta at the injection step ----
+class FieldInjector(SAEInjector):
+    """Add a fixed per-node delta field [nnode,1,512] (broadcasts over batch) at the injection step.
+    The delta was precomputed in PyTorch to remove/insert a matryoshka concept's decoder contribution."""
+    def __init__(self, field):
+        try: super().__init__(field)
+        except Exception: pass
+        self.field = field
+    def __call__(self, x, alpha=None):
+        if alpha is None:
+            return x
+        return (x + self.field).astype(x.dtype)
+
+
+class GateInjector(SAEInjector):
+    """No-op injector that prints ||x_forward - x8_ref|| at the injection step, to confirm the forward's
+    step activation equals the extracted x8 the delta was built from. Returns x unchanged."""
+    def __init__(self, x8_ref):
+        try: super().__init__(x8_ref)
+        except Exception: pass
+        self.x8_ref = np.asarray(x8_ref, np.float32)
+    def __call__(self, x, alpha=None):
+        if alpha is None:
+            return x
+        ref = self.x8_ref
+        def _cb(xv):
+            xv = np.asarray(xv, np.float32).reshape(-1, ref.shape[-1]); r = ref.reshape(-1, ref.shape[-1])
+            n = min(xv.shape[0], r.shape[0])
+            d = float(np.linalg.norm((xv[:n] - r[:n]).ravel())); rr = float(np.linalg.norm(r[:n].ravel()))
+            print(f"[GATE] xshape={tuple(np.asarray(xv).shape)}  ||x_fwd - x8||={d:.3f}  rel={d/max(rr,1e-9):.4f}", flush=True)
+        jax.debug.callback(_cb, x)
+        return x
+
+
+def make_field_forward(field, S, step=8, gate_x8=None):
+    def construct(model_config, task_config):
+        inj = GateInjector(gate_x8) if gate_x8 is not None else FieldInjector(field)
+        p = gc.GraphCast(model_config, task_config, mesh_sae_injector=inj,
+                         mesh_sae_steps=[step], mesh_sae_node_sets=["mesh_nodes"], mesh_sae_alpha=jnp.zeros(1))
+        p = casting.Bfloat16Cast(p)
+        p = normalization.InputsAndResiduals(p, diffs_stddev_by_level=S["diffs"],
+                                             mean_by_level=S["mean"], stddev_by_level=S["stddev"])
+        return autoregressive.Predictor(p, gradient_checkpointing=True)
+    @hk.transform_with_state
+    def run_forward(model_config, task_config, inputs, targets_template, forcings):
+        return construct(model_config, task_config)(inputs, targets_template=targets_template, forcings=forcings)
+    with_configs = lambda fn: functools.partial(fn, model_config=S["mc"], task_config=S["tc"])
+    with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
+    drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
+    return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))

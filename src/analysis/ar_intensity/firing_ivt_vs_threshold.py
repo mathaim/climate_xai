@@ -4,7 +4,7 @@ import os, glob, json, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode
 from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, node_ivt, ERA5_DIR
 from src.analysis.ar_intensity.regions import REGIONS
-THRESH = 0.1; N = 300; REG = "W_S_America"; CC = [1829, 3481, 340, 99]
+THRESH = 0.1; N = 300; REG = "W_S_America"; CC = [340, 3481, 3948, 3675, 1829]
 THR = json.load(open("/project/AikyamLab/madelyn/GraphCast/AtmosphericRivers/intensity_pipeline/region_thresholds.json"))[REG]
 def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy", ""), "%Y-%m-%dT%H-%M")
 def main():
