@@ -1,38 +1,47 @@
-"""Uniform cross-layer tracking for ALL L8 concepts (parents + children, geo + AR).
-Counterpart = argmax firing-Jaccard (same rule for every concept). Reports the full Balcells
-et al. suite: Pearson (continuous acts), Jaccard, Sufficiency P(L15|L8), Necessity P(L8|L15)."""
+"""Uniform cross-layer tracking (full Balcells suite): counterpart = argmax firing-Jaccard over all
+4096 L15 latents (same rule for every concept); report Pearson, Jaccard, Sufficiency P(L15|L8),
+Necessity P(L8|L15). All accumulation on-device. Reads only existing L8/L15 activations (no ERA5)."""
 import os, glob, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode
-from src.analysis.ar_intensity.ivt_pipeline import load_channel_index, ERA5_DIR
-N = 200; D = "/scratch/euh7ys/climate_xai/concept_ivt"
-GROUPS = [("cross_layer.npz", [340, 3481, 3948, 3675]), ("cross_layer_99.npz", [99, 1454, 3392, 2722])]
-def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy", ""), "%Y-%m-%dT%H-%M")
+NMAX = int(os.environ.get("NMAX", "8000")); THRESH = 0.1
+DEV = "cuda" if torch.cuda.is_available() else "cpu"
+if os.environ.get("REQUIRE_GPU") == "1":
+    assert torch.cuda.is_available(), "REQUIRE_GPU=1 but no CUDA (need GPU node + CUDA torch build)"
+CONCEPTS = [(340,"geo-parent"),(3481,"geo-child"),(3948,"geo-child"),(3675,"geo-child"),
+            (99,"AR-core"),(1454,"AR-child"),(3392,"AR-child"),(2722,"AR-child"),
+            (176,"gen-AR"),(369,"gen-AR"),(664,"gen-AR"),
+            (512,"gen-nest-p"),(1308,"gen-nest-c"),(230,"gen-nest-p"),(4094,"gen-nest-c")]
+CC = [c[0] for c in CONCEPTS]
+def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy",""),"%Y-%m-%dT%H-%M")
 def enc(f, m, c, fmin, frng):
     a = np.load(f, mmap_mode="r"); x = np.ascontiguousarray(a).astype(np.float32).reshape(a.shape[0], -1)
-    if fmin is not None: x = (2.0 * (x - fmin) / frng - 1.0).astype(np.float32)
-    with torch.no_grad(): return encode(m, c["arch"], torch.from_numpy(x).to("cpu")).cpu().numpy()
+    if fmin is not None: x = (2.0*(x-fmin)/frng-1.0).astype(np.float32)
+    with torch.no_grad(): return encode(m, c["arch"], torch.from_numpy(x).to(DEV))
 def main():
-    pairs = []  # [l8, l15, J, suff, nec]
-    for fn, ccs in GROUPS:
-        d = np.load(f"{D}/{fn}"); wsa = list(d["wsa"])
-        for cc in ccs:
-            k = wsa.index(cc); j = int(np.argmax(d["jac"][k])); both = d["both"][k, j]
-            pairs.append([cc, j, float(d["jac"][k, j]), float(both / d["cnt8"][k]), float(both / d["cnt15"][j])])
-    l8s = [p[0] for p in pairs]; l15s = [p[1] for p in pairs]
-    m8, c8, fmin8, frng8 = load_sae("matry_L8", "cpu"); m15, c15, fmin15, frng15 = load_sae("matry_L15", "cpu")
+    print("device", DEV, "NMAX", NMAX, flush=True)
+    m8,c8,fmin8,frng8 = load_sae("matry_L8", DEV); m15,c15,fmin15,frng15 = load_sae("matry_L15", DEV)
     dtmap = lambda dd: {pdt(os.path.basename(f)): f for f in glob.glob(f"{dd}/layer*_*.npy")}
-    f8, f15 = dtmap(c8["act"]), dtmap(c15["act"]); shared = sorted(set(f8) & set(f15))
-    rng = np.random.default_rng(0); sel = [shared[i] for i in rng.choice(len(shared), min(N, len(shared)), replace=False)]
-    P = len(pairs); n = 0; sx = np.zeros(P); sy = np.zeros(P); sxy = np.zeros(P); sxx = np.zeros(P); syy = np.zeros(P)
-    for i, dt in enumerate(sel):
-        a8 = enc(f8[dt], m8, c8, fmin8, frng8); a15 = enc(f15[dt], m15, c15, fmin15, frng15)
-        X = a8[:, l8s]; Y = a15[:, l15s]
-        n += X.shape[0]; sx += X.sum(0); sy += Y.sum(0); sxy += (X * Y).sum(0); sxx += (X * X).sum(0); syy += (Y * Y).sum(0)
-        if (i + 1) % 50 == 0: print(f"  {i+1}/{len(sel)}", flush=True)
-    cov = sxy - sx * sy / n; vx = sxx - sx * sx / n; vy = syy - sy * sy / n
-    pear = cov / np.sqrt(vx * vy + 1e-12)
-    print(f"\n{'L8':>5} {'L15':>5} {'Pearson':>8} {'Jaccard':>8} {'Suff':>6} {'Nec':>6}")
-    for i, p in enumerate(pairs):
-        print(f"{p[0]:>5} {p[1]:>5} {pear[i]:>8.3f} {p[2]:>8.3f} {p[3]:>6.3f} {p[4]:>6.3f}")
+    f8,f15 = dtmap(c8["act"]), dtmap(c15["act"]); shared = sorted(set(f8) & set(f15))
+    sel = shared if NMAX >= len(shared) else [shared[i] for i in np.linspace(0, len(shared)-1, NMAX).astype(int)]
+    print("shared", len(shared), "using", len(sel), flush=True)
+    P = len(CC); CCt = torch.tensor(CC, device=DEV); n = 0
+    z = lambda *s: torch.zeros(*s, dtype=torch.float64, device=DEV)
+    both=z(P,4096); cnt8=z(P); cnt15=z(4096); sxy=z(P,4096); sx=z(P); sy=z(4096); sxx=z(P); syy=z(4096)
+    for i,dt in enumerate(sel):
+        with torch.no_grad():
+            a8 = enc(f8[dt],m8,c8,fmin8,frng8); a15 = enc(f15[dt],m15,c15,fmin15,frng15)
+            X = a8[:,CCt]; B8 = (X>THRESH).float(); B15 = (a15>THRESH).float()
+            both += (B8.T@B15).double(); cnt8 += B8.sum(0).double(); cnt15 += B15.sum(0).double()
+            sxy += (X.T@a15).double(); sx += X.sum(0).double(); sy += a15.sum(0).double()
+            sxx += (X*X).sum(0).double(); syy += (a15*a15).sum(0).double(); n += X.shape[0]
+        if (i+1)%1000==0: print(f"  {i+1}/{len(sel)}", flush=True)
+    g=lambda t:t.cpu().numpy()
+    both,cnt8,cnt15,sxy,sx,sy,sxx,syy = map(g,(both,cnt8,cnt15,sxy,sx,sy,sxx,syy))
+    print(f"\n{'concept':>8}{'kind':>12}{'L15':>6}{'Pear':>7}{'Jac':>7}{'Suff':>7}{'Nec':>7}")
+    for i,(cc,kind) in enumerate(CONCEPTS):
+        J = both[i]/np.maximum(cnt8[i]+cnt15-both[i],1); j = int(np.argmax(J))
+        suff = both[i,j]/max(cnt8[i],1); nec = both[i,j]/max(cnt15[j],1)
+        num = n*sxy[i,j]-sx[i]*sy[j]; den = np.sqrt(max(n*sxx[i]-sx[i]**2,1e-9)*max(n*syy[j]-sy[j]**2,1e-9))
+        print(f"{cc:>8}{kind:>12}{j:>6}{num/den:>7.3f}{J[j]:>7.3f}{suff:>7.3f}{nec:>7.3f}")
 if __name__ == "__main__":
     main()
