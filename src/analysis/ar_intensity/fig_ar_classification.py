@@ -14,7 +14,7 @@ ax[0].bar(x, med, color=col)
 for th, lab in [(250, "AR ($\\geq$250)"), (500, "strong AR ($\\geq$500)")]:
     ax[0].axhline(th, ls="--", color="0.5", lw=1); ax[0].text(len(con)-0.45, th+10, lab, fontsize=8, color="0.4", ha="right")
 ax[0].set_xticks(x); ax[0].set_xticklabels(con); ax[0].set_ylim(0, 780)
-ax[0].set_ylabel("median firing IVT (kg m$^{-1}$s$^{-1}$)")
+ax[0].set_ylabel("median firing IVT (kg/m/s)")
 # right: fraction of firings at AR and strong-AR strength
 w = 0.4
 ax[1].bar(x - w/2, ar250, w, color=col, label="AR ($\\geq$250)")
