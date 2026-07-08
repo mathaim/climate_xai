@@ -3,7 +3,8 @@
 import os, glob, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode
 NMAX = int(os.environ.get("NMAX", "8000")); THRESH = 0.1
-OUT = "/scratch/euh7ys/climate_xai/concept_ivt/macro_persistence.npz"
+SRC = os.environ.get("SRC","matry_L8"); DST = os.environ.get("DST","matry_L15")
+OUT = os.environ.get("OUT","/scratch/euh7ys/climate_xai/concept_ivt/macro_persistence.npz")
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 if os.environ.get("REQUIRE_GPU") == "1": assert torch.cuda.is_available()
 def pdt(fn): return DT.datetime.strptime(fn.split("_t")[-1].replace(".npy",""),"%Y-%m-%dT%H-%M")
@@ -13,7 +14,8 @@ def enc(f, m, c, fmin, frng):
     with torch.no_grad(): return encode(m, c["arch"], torch.from_numpy(x).to(DEV))
 def main():
     print("device", DEV, "NMAX", NMAX, flush=True)
-    m8,c8,f8m,f8r = load_sae("matry_L8", DEV); m15,c15,f15m,f15r = load_sae("matry_L15", DEV)
+    m8,c8,f8m,f8r = load_sae(SRC, DEV); m15,c15,f15m,f15r = load_sae(DST, DEV)
+    print("pair", SRC, "->", DST, flush=True)
     dtmap = lambda dd: {pdt(os.path.basename(f)): f for f in glob.glob(f"{dd}/layer*_*.npy")}
     F8,F15 = dtmap(c8["act"]), dtmap(c15["act"]); shared = sorted(set(F8)&set(F15))
     sel = shared if NMAX >= len(shared) else [shared[i] for i in np.linspace(0,len(shared)-1,NMAX).astype(int)]
