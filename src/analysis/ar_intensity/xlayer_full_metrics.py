@@ -1,9 +1,10 @@
-"""Uniform cross-layer tracking (full Balcells suite): counterpart = argmax firing-Jaccard over all
-4096 L15 latents (same rule for every concept); report Pearson, Jaccard, Sufficiency P(L15|L8),
-Necessity P(L8|L15). All accumulation on-device. Reads only existing L8/L15 activations (no ERA5)."""
+"""Uniform cross-layer tracking (full Balcells suite), on-device, with periodic checkpointing so a
+partial run is recoverable. Counterpart = argmax firing-Jaccard; reports Pearson/Jaccard/Suff/Nec.
+Reads only existing L8/L15 activations (no ERA5)."""
 import os, glob, numpy as np, torch, datetime as DT
 from src.analysis.ar_intensity.sae_features import load_sae, encode
-NMAX = int(os.environ.get("NMAX", "8000")); THRESH = 0.1
+NMAX = int(os.environ.get("NMAX", "8000")); THRESH = 0.1; CKPT = 5000
+CKF = "/scratch/euh7ys/climate_xai/concept_ivt/xlmet_ckpt.npz"
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 if os.environ.get("REQUIRE_GPU") == "1":
     assert torch.cuda.is_available(), "REQUIRE_GPU=1 but no CUDA (need GPU node + CUDA torch build)"
@@ -17,6 +18,15 @@ def enc(f, m, c, fmin, frng):
     a = np.load(f, mmap_mode="r"); x = np.ascontiguousarray(a).astype(np.float32).reshape(a.shape[0], -1)
     if fmin is not None: x = (2.0*(x-fmin)/frng-1.0).astype(np.float32)
     with torch.no_grad(): return encode(m, c["arch"], torch.from_numpy(x).to(DEV))
+def report(ns, acc, n):
+    b, c8, c15, xy, X_, Y_, xx, yy = [t.cpu().numpy() for t in acc]
+    np.savez(CKF, nsteps=ns, both=b, cnt8=c8, cnt15=c15, sxy=xy, sx=X_, sy=Y_, sxx=xx, syy=yy, n=n, CC=np.array(CC))
+    print(f"\n=== after {ns} timesteps ===\n{'concept':>8}{'kind':>12}{'L15':>6}{'Pear':>7}{'Jac':>7}{'Suff':>7}{'Nec':>7}", flush=True)
+    for i,(cc,kind) in enumerate(CONCEPTS):
+        J = b[i]/np.maximum(c8[i]+c15-b[i],1); j = int(np.argmax(J))
+        suff = b[i,j]/max(c8[i],1); nec = b[i,j]/max(c15[j],1)
+        num = n*xy[i,j]-X_[i]*Y_[j]; den = np.sqrt(max(n*xx[i]-X_[i]**2,1e-9)*max(n*yy[j]-Y_[j]**2,1e-9))
+        print(f"{cc:>8}{kind:>12}{j:>6}{num/den:>7.3f}{J[j]:>7.3f}{suff:>7.3f}{nec:>7.3f}", flush=True)
 def main():
     print("device", DEV, "NMAX", NMAX, flush=True)
     m8,c8,fmin8,frng8 = load_sae("matry_L8", DEV); m15,c15,fmin15,frng15 = load_sae("matry_L15", DEV)
@@ -34,14 +44,7 @@ def main():
             both += (B8.T@B15).double(); cnt8 += B8.sum(0).double(); cnt15 += B15.sum(0).double()
             sxy += (X.T@a15).double(); sx += X.sum(0).double(); sy += a15.sum(0).double()
             sxx += (X*X).sum(0).double(); syy += (a15*a15).sum(0).double(); n += X.shape[0]
-        if (i+1)%1000==0: print(f"  {i+1}/{len(sel)}", flush=True)
-    g=lambda t:t.cpu().numpy()
-    both,cnt8,cnt15,sxy,sx,sy,sxx,syy = map(g,(both,cnt8,cnt15,sxy,sx,sy,sxx,syy))
-    print(f"\n{'concept':>8}{'kind':>12}{'L15':>6}{'Pear':>7}{'Jac':>7}{'Suff':>7}{'Nec':>7}")
-    for i,(cc,kind) in enumerate(CONCEPTS):
-        J = both[i]/np.maximum(cnt8[i]+cnt15-both[i],1); j = int(np.argmax(J))
-        suff = both[i,j]/max(cnt8[i],1); nec = both[i,j]/max(cnt15[j],1)
-        num = n*sxy[i,j]-sx[i]*sy[j]; den = np.sqrt(max(n*sxx[i]-sx[i]**2,1e-9)*max(n*syy[j]-sy[j]**2,1e-9))
-        print(f"{cc:>8}{kind:>12}{j:>6}{num/den:>7.3f}{J[j]:>7.3f}{suff:>7.3f}{nec:>7.3f}")
+        if (i+1) % CKPT == 0 or (i+1) == len(sel):
+            report(i+1, (both,cnt8,cnt15,sxy,sx,sy,sxx,syy), n)
 if __name__ == "__main__":
     main()
