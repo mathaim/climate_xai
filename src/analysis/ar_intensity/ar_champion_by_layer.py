@@ -14,11 +14,17 @@ for sae in ["matry_L0","matry_L8","matry_L15","plain_L0","plain_L8","plain_L15"]
         print(f"{sae}: features missing, skipped"); continue
     cs = []
     for reg in meta["region"].unique():
-        m = (meta["region"]==reg).values; iv = meta[m]["max_ivt"].values.astype(float)
-        X = np.asarray(F[m]); Xz = X - X.mean(0); ivz = iv - iv.mean()
-        c = (Xz*ivz[:,None]).sum(0)/np.sqrt((Xz**2).sum(0)*(ivz**2).sum()+1e-9)
+        iv_all = meta["max_ivt"].values.astype(float)
+        m = (meta["region"]==reg).values & np.isfinite(iv_all)
+        iv = iv_all[m]
+        if m.sum() < 100: print(f"   {reg}: only {m.sum()} finite rows, skipped"); continue
+        X = np.asarray(F[m], dtype=np.float64); Xz = X - X.mean(0); ivz = iv - iv.mean()
+        den = np.sqrt((Xz**2).sum(0)*(ivz**2).sum())
+        c = np.where(den > 0, (Xz*ivz[:,None]).sum(0)/np.maximum(den,1e-12), 0.0)
         cs.append(c)
-    c = np.mean(cs, 0); top = np.argsort(-c)[:10]
+        nbad = int((~np.isfinite(iv_all[(meta["region"]==reg).values])).sum())
+        if nbad: print(f"   {reg}: dropped {nbad} non-finite max_ivt rows")
+    c = np.nan_to_num(np.mean(cs, 0)); top = np.argsort(-c)[:10]
     tag = (lambda x: f"{x}({GRP(x)})") if sae.startswith("matry") else str
     print(f"\n{sae}: max corr {c[top[0]]:+.3f}   top10: " + ", ".join(f"{tag(t)} {c[t]:+.2f}" for t in top))
     for cc in CHECK.get(sae, []):
