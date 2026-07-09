@@ -20,9 +20,9 @@ def main():
                 if fmin is not None:   # matryoshka
                     fm = torch.from_numpy(np.asarray(fmin, np.float32)); fr = torch.from_numpy(np.asarray(frng, np.float32))
                     xs = 2.0*(xt - fm)/fr - 1.0
-                    acts = encode(m, c["arch"], xs)
-                    W = m.W_dec if m.W_dec.shape[0] == acts.shape[-1] else m.W_dec.T
-                    rec_s = m.normalizer.unnormalize(acts @ W + m.b_dec)
+                    xn = m.normalizer.normalize(xs)
+                    code = m._apply_topk(xn @ m.W_enc + m.b_enc, m.target_l0)
+                    rec_s = m.normalizer.unnormalize(code @ m.W_dec + m.b_dec)   # 512-dim: exact inverse
                     rec = (rec_s + 1.0)*fr/2.0 + fm
                 else:                  # plain: un-normalize forward's recon back to raw
                     out = m(xt); rec_n = out[0] if isinstance(out,(tuple,list)) else out

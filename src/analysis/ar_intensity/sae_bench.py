@@ -13,9 +13,8 @@ def recon_pair(m, arch, x):
         # Matryoshka: no forward; build recon from primitives in NORMALIZED space (exact,
         # scale cancels; normalize/unnormalize are true inverses on the 512-dim input).
         xn = m.normalizer.normalize(x)
-        a = encode(m, arch, x)
-        W = m.W_dec if m.W_dec.shape[0] == a.shape[-1] else m.W_dec.T
-        return a @ W + m.b_dec, xn
+        code = m._apply_topk(xn @ m.W_enc + m.b_enc, m.target_l0)   # raw code, as in training step()
+        return code @ m.W_dec + m.b_dec, xn
     out = m(x)
     if isinstance(out, (tuple, list)): out = out[0]
     if out.shape == x.shape:
