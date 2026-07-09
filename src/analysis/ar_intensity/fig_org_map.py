@@ -8,8 +8,8 @@ GRP = lambda c: "G0" if c < 256 else "G1" if c < 512 else "G2" if c < 1024 else 
 CNT = {("matry","L0"): ("macro_persistence_L0L8.npz","cnt8"), ("matry","L8"): ("macro_persistence.npz","cnt8"),
        ("matry","L15"): ("macro_persistence.npz","cnt15"), ("plain","L0"): ("macro_persistence_plain_L0L8.npz","cnt8"),
        ("plain","L8"): ("macro_persistence_plain_L8L15.npz","cnt8"), ("plain","L15"): ("macro_persistence_plain_L8L15.npz","cnt15")}
-ANNOT = {("matry","L8"): [340, 3481, 3948, 3675, 1454, 3392, 2722],
-         ("plain","L15"): [1592]}
+ANNOT = {("matry","L8"): [1454, 3392, 2722, 340], ("plain","L15"): [1592]}
+OFF = {1454: (8, 4), 3392: (8, -6), 2722: (-34, 2), 340: (8, -10), 1592: (8, 8)}
 fig, axes = plt.subplots(2, 3, figsize=(15, 8.5), sharex=True, sharey=True)
 plt.rcParams["axes.xmargin"] = 0.05
 for r, arch in enumerate(["matry", "plain"]):
@@ -23,10 +23,9 @@ for r, arch in enumerate(["matry", "plain"]):
         ch = int(np.argmax(corr))
         ax.scatter([rate[ch]], [corr[ch]], s=90, facecolor="none", edgecolor="k", lw=1.4, zorder=5)
         ax.annotate(str(ch), (rate[ch], corr[ch]), textcoords="offset points", xytext=(7, 5), fontsize=9, weight="bold", zorder=6)
-        for q, cc in enumerate(ANNOT.get((arch, L), [])):
-            ax.scatter([rate[cc]], [corr[cc]], s=55, facecolor="none", edgecolor="0.15", lw=1.0, zorder=5)
-            dy = 6 if q % 2 == 0 else -11
-            ax.annotate(str(cc), (rate[cc], corr[cc]), textcoords="offset points", xytext=(6, dy), fontsize=7.5, zorder=6)
+        for cc in ANNOT.get((arch, L), []):
+            ax.scatter([rate[cc]], [corr[cc]], s=60, facecolor="none", edgecolor="0.15", lw=1.1, zorder=5)
+            ax.annotate(str(cc), (rate[cc], corr[cc]), textcoords="offset points", xytext=OFF.get(cc, (7, 5)), fontsize=8.5, weight="bold", zorder=6)
         ax.set_ylim(-0.44, 0.60)
         ax.set_xscale("log"); ax.axhline(0, color="0.8", lw=0.8); ax.grid(alpha=.25)
         ax.tick_params(labelbottom=True)
