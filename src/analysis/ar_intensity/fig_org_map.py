@@ -9,6 +9,7 @@ CNT = {("matry","L0"): ("macro_persistence_L0L8.npz","cnt8"), ("matry","L8"): ("
        ("matry","L15"): ("macro_persistence.npz","cnt15"), ("plain","L0"): ("macro_persistence_plain_L0L8.npz","cnt8"),
        ("plain","L8"): ("macro_persistence_plain_L8L15.npz","cnt8"), ("plain","L15"): ("macro_persistence_plain_L8L15.npz","cnt15")}
 fig, axes = plt.subplots(2, 3, figsize=(15, 8.5), sharex=True, sharey=True)
+plt.rcParams["axes.xmargin"] = 0.05
 for r, arch in enumerate(["matry", "plain"]):
     for k, L in enumerate(["L0", "L8", "L15"]):
         ax = axes[r, k]
@@ -21,6 +22,7 @@ for r, arch in enumerate(["matry", "plain"]):
         ax.scatter([rate[ch]], [corr[ch]], s=90, facecolor="none", edgecolor="k", lw=1.4, zorder=5)
         ax.annotate(str(ch), (rate[ch], corr[ch]), textcoords="offset points", xytext=(7, 5), fontsize=9, weight="bold", zorder=6)
         ax.set_xscale("log"); ax.axhline(0, color="0.8", lw=0.8); ax.grid(alpha=.25)
+        ax.tick_params(labelbottom=True)
         if r == 0: ax.set_title(f"layer {L[1:]}", fontsize=12)
 for r, lab in enumerate(["Matryoshka SAE", "Plain SAE"]):
     axes[r, 0].set_ylabel(f"{lab}\ncorr with AR intensity")
