@@ -18,7 +18,10 @@ def recon_pair(m, arch, x):
         return a @ W + m.b_dec, xn
     out = m(x)
     if isinstance(out, (tuple, list)): out = out[0]
-    if out.shape == x.shape: return out, x
+    if out.shape == x.shape:
+        xm = x - x.mean(1, keepdim=True)
+        xn = xm / xm.norm(dim=1, keepdim=True).clamp_min(1e-6)   # forward's own target space
+        return out, xn
     raise RuntimeError(f"no recon interface; model attrs: {[a for a in dir(m) if not a.startswith('_')]}")
 def core_metrics(name):
     m, c, fmin, frng = load_sae(name, DEV)
