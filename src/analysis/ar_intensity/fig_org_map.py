@@ -8,8 +8,8 @@ GRP = lambda c: "G0" if c < 256 else "G1" if c < 512 else "G2" if c < 1024 else 
 CNT = {("matry","L0"): ("macro_persistence_L0L8.npz","cnt8"), ("matry","L8"): ("macro_persistence.npz","cnt8"),
        ("matry","L15"): ("macro_persistence.npz","cnt15"), ("plain","L0"): ("macro_persistence_plain_L0L8.npz","cnt8"),
        ("plain","L8"): ("macro_persistence_plain_L8L15.npz","cnt8"), ("plain","L15"): ("macro_persistence_plain_L8L15.npz","cnt15")}
-ANNOT = {("matry","L8"): [1454, 3392, 2722, 340], ("plain","L15"): [1592]}
-OFF = {1454: (8, 4), 3392: (8, -6), 2722: (-34, 2), 340: (8, -10), 1592: (8, 8)}
+ANNOT = {("matry","L8"): [1454, 3392, 2722, 340], ("plain","L8"): [1592]}
+OFF = {1454: (10, 8), 3392: (10, -14), 2722: (-38, 2), 340: (8, -12), 1592: (8, 8)}
 fig, axes = plt.subplots(2, 3, figsize=(15, 8.5), sharex=True, sharey=True)
 plt.rcParams["axes.xmargin"] = 0.05
 for r, arch in enumerate(["matry", "plain"]):
