@@ -6,16 +6,19 @@ from src.analysis.ar_intensity.sae_features import load_sae, encode
 NMAX = int(os.environ.get("NMAX", "1000")); THRESH = 0.1
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 D = "/project/AikyamLab/madelyn/GraphCast/AtmosphericRivers/intensity_pipeline/sae_features"
-SAELIST = ["matry_L0","matry_L8","matry_L15","plain_L0","plain_L8","plain_L15"]
-def recon(m, arch, x):
-    for fn in ("forward", "__call__"):
-        try:
-            out = getattr(m, fn)(x)
-            if isinstance(out, (tuple, list)): out = out[0]
-            if out.shape == x.shape: return out
-        except Exception: pass
-    try: return m.decode(encode(m, arch, x))
-    except Exception: pass
+SAELIST = os.environ.get("SAES", "matry_L0,matry_L8,matry_L15,plain_L0,plain_L8,plain_L15").split(",")
+def recon_pair(m, arch, x):
+    """Return (reconstruction, target) in the SAE's own operating space."""
+    if hasattr(m, "normalizer") and m.normalizer is not None:
+        # Matryoshka: no forward; build recon from primitives in NORMALIZED space (exact,
+        # scale cancels; normalize/unnormalize are true inverses on the 512-dim input).
+        xn = m.normalizer.normalize(x)
+        a = encode(m, arch, x)
+        W = m.W_dec if m.W_dec.shape[0] == a.shape[-1] else m.W_dec.T
+        return a @ W + m.b_dec, xn
+    out = m(x)
+    if isinstance(out, (tuple, list)): out = out[0]
+    if out.shape == x.shape: return out, x
     raise RuntimeError(f"no recon interface; model attrs: {[a for a in dir(m) if not a.startswith('_')]}")
 def core_metrics(name):
     m, c, fmin, frng = load_sae(name, DEV)
@@ -27,9 +30,9 @@ def core_metrics(name):
         if fmin is not None: x = (2.0*(x-fmin)/frng-1.0).astype(np.float32)
         xt = torch.from_numpy(x).to(DEV)
         with torch.no_grad():
-            acts = encode(m, c["arch"], xt); xr = recon(m, c["arch"], xt)
+            acts = encode(m, c["arch"], xt); xr, tgt = recon_pair(m, c["arch"], xt)
             B = acts > THRESH
-            sse += float(((xr - xt)**2).sum()); svar += float(((xt - xt.mean(0))**2).sum())
+            sse += float(((xr - tgt)**2).sum()); svar += float(((tgt - tgt.mean(0))**2).sum())
             l0 += float(B.sum()); n += xt.shape[0]; fired |= B.any(0); dens += B.sum(0).double()
         if (k+1) % 250 == 0: print(f"  {name} {k+1}/{len(sel)}", flush=True)
     fvu = sse/max(svar,1e-9); dead = 4096 - int(fired.sum()); d = (dens/max(n,1)).cpu().numpy()
