@@ -16,6 +16,8 @@ def main():
         if B is None or X is None: print(f"missing {base_tag}/{mod_tag}"); continue
         print(f"{base_tag} levels | " + "  ".join(f"{t}:{B[:,t].sum():.1f}" for t in T), flush=True)
         print(f"{mod_tag} levels | " + "  ".join(f"{t}:{X[:,t].sum():.1f}" for t in T), flush=True)
+        print(f"{base_tag} levels | " + "  ".join(f"{t}:{B[:,t].sum():.1f}" for t in T), flush=True)
+        print(f"{mod_tag} levels | " + "  ".join(f"{t}:{X[:,t].sum():.1f}" for t in T), flush=True)
         d = X - B; floor = np.median([np.abs(d[:, j]).sum() for j in rand])
         row = "  ".join(f"{t}:{d[:,t].sum():+.1f}({np.abs(d[:,t]).sum()/max(floor,1e-9):.0f}x)" for t in T)
         print(f"{mod_tag}: floor {floor:.2f} | " + row, flush=True)
