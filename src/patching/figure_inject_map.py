@@ -22,7 +22,6 @@ for i, (ax, (title, Z, cmap, vmn, vmx)) in enumerate(zip(axes, specs)):
     if HAS:
         im = ax.pcolormesh(lon, lat, Z, cmap=cmap, vmin=vmn, vmax=vmx, transform=proj, shading="auto")
         ax.coastlines(resolution="50m", lw=0.7); ax.add_feature(cfeature.BORDERS, lw=0.4)
-        ax.plot(-123.1, 49.3, marker="*", color="red", ms=14, transform=proj, zorder=6)
         ax.set_extent([lon.min(), lon.max(), lat.min(), lat.max()], crs=proj)
         gl = ax.gridlines(draw_labels=True, lw=0.3, color="gray", alpha=0.4)
         gl.top_labels = gl.right_labels = False
@@ -30,7 +29,7 @@ for i, (ax, (title, Z, cmap, vmn, vmx)) in enumerate(zip(axes, specs)):
         gl.xlabel_style = {"size": 8}; gl.ylabel_style = {"size": 8}
     else:
         im = ax.pcolormesh(lon, lat, Z, cmap=cmap, vmin=vmn, vmax=vmx, shading="auto")
-        ax.plot(-123.1, 49.3, marker="*", color="red", ms=14); ax.set_xlabel("Longitude (\u00b0E)", fontsize=8)
+        ax.set_xlabel("Longitude (\u00b0E)", fontsize=8)
         if i == 0: ax.set_ylabel("Latitude (\u00b0N)", fontsize=8)
     ims.append(im); ax.set_title(title, fontsize=10.5, loc="left")
 # left colorbar: shared IVT (a-c)
