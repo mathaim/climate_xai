@@ -198,3 +198,47 @@ def make_field_capture_forward(field, S, holder, inject_step=8, capture_step=15)
     with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
     drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
     return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
+
+
+class AlphaCaptureInjector(CastInjector):
+    """CastInjector (in-JAX encode + alpha edit) at the FIRST configured step; capture the
+    activation at the SECOND. Use mesh_sae_steps=[edit_step, capture_step]."""
+    def __init__(self, params, holder):
+        super().__init__(params); self.holder = holder; self._calls = 0
+    def __call__(self, x, alpha=None):
+        if alpha is None: return x
+        self._calls += 1
+        if self._calls == 1: return super().__call__(x, alpha)
+        jax.debug.callback(lambda xv: self.holder.append(np.asarray(xv, np.float32)), x)
+        return x
+
+
+class AddCaptureInjector(AddInjector):
+    """AddInjector (write concepts in) at the FIRST step; capture at the SECOND."""
+    def __init__(self, params, holder):
+        super().__init__(params); self.holder = holder; self._calls = 0
+    def __call__(self, x, alpha=None):
+        if alpha is None: return x
+        self._calls += 1
+        if self._calls == 1: return super().__call__(x, alpha)
+        jax.debug.callback(lambda xv: self.holder.append(np.asarray(xv, np.float32)), x)
+        return x
+
+
+def make_capture_forward(alpha, S, holder, injector_cls, edit_step=8, capture_step=15):
+    def construct(model_config, task_config):
+        inj = injector_cls(S["sae"], holder)
+        p = gc.GraphCast(model_config, task_config, mesh_sae_injector=inj,
+                         mesh_sae_steps=[edit_step, capture_step], mesh_sae_node_sets=["mesh_nodes"],
+                         mesh_sae_alpha=alpha)
+        p = casting.Bfloat16Cast(p)
+        p = normalization.InputsAndResiduals(p, diffs_stddev_by_level=S["diffs"],
+                                             mean_by_level=S["mean"], stddev_by_level=S["stddev"])
+        return autoregressive.Predictor(p, gradient_checkpointing=True)
+    @hk.transform_with_state
+    def run_forward(model_config, task_config, inputs, targets_template, forcings):
+        return construct(model_config, task_config)(inputs, targets_template=targets_template, forcings=forcings)
+    with_configs = lambda fn: functools.partial(fn, model_config=S["mc"], task_config=S["tc"])
+    with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
+    drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
+    return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
