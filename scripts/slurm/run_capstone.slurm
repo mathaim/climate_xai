@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=run_capstone
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a6000:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH --time=2:00:00
 #SBATCH --mem=96G
 #SBATCH --cpus-per-task=4
