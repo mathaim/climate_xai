@@ -242,3 +242,32 @@ def make_capture_forward(alpha, S, holder, injector_cls, edit_step=8, capture_st
     with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
     drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
     return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
+
+
+class CaptureOnlyInjector(SAEInjector):
+    """Capture the activation at the configured step; modify nothing."""
+    def __init__(self, holder):
+        try: super().__init__(holder)
+        except Exception: pass
+        self.holder = holder
+    def __call__(self, x, alpha=None):
+        if alpha is None: return x
+        jax.debug.callback(lambda xv: self.holder.append(np.asarray(xv, np.float32)), x)
+        return x
+
+
+def make_captureonly_forward(S, holder, step=8):
+    def construct(model_config, task_config):
+        p = gc.GraphCast(model_config, task_config, mesh_sae_injector=CaptureOnlyInjector(holder),
+                         mesh_sae_steps=[step], mesh_sae_node_sets=["mesh_nodes"], mesh_sae_alpha=jnp.zeros(1))
+        p = casting.Bfloat16Cast(p)
+        p = normalization.InputsAndResiduals(p, diffs_stddev_by_level=S["diffs"],
+                                             mean_by_level=S["mean"], stddev_by_level=S["stddev"])
+        return autoregressive.Predictor(p, gradient_checkpointing=True)
+    @hk.transform_with_state
+    def run_forward(model_config, task_config, inputs, targets_template, forcings):
+        return construct(model_config, task_config)(inputs, targets_template=targets_template, forcings=forcings)
+    with_configs = lambda fn: functools.partial(fn, model_config=S["mc"], task_config=S["tc"])
+    with_params = lambda fn: functools.partial(fn, params=S["params"], state=S["state"])
+    drop_state = lambda fn: (lambda **kw: fn(**kw)[0])
+    return drop_state(with_params(jax.jit(with_configs(run_forward.apply))))
