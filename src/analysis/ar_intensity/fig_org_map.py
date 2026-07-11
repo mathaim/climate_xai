@@ -9,9 +9,9 @@ CNT = {("matry","L0"): ("macro_persistence_L0L8.npz","cnt8"), ("matry","L8"): ("
        ("matry","L15"): ("macro_persistence.npz","cnt15"), ("plain","L0"): ("macro_persistence_plain_L0L8.npz","cnt8"),
        ("plain","L8"): ("macro_persistence_plain_L8L15.npz","cnt8"), ("plain","L15"): ("macro_persistence_plain_L8L15.npz","cnt15")}
 # per-concept: (label, dx, dy)  -- c1 = child of 99, c2 = child of 340
-LAB = {("matry","L8"): {1454: ("1454 c1", 10, 10), 3392: ("3392 c1", 12, -4), 2722: ("2722 c1", -52, 2),
-                        340: ("340", 8, -12), 3481: ("3481 c2", 8, 6), 3948: ("3948 c2", 8, -13),
-                        3675: ("3675 c2", -52, -4)},
+LAB = {("matry","L8"): {1454: ("1454 c1", 12, 8), 3392: ("3392 c1", 12, -20), 2722: ("2722 c1", -56, 2),
+                        340: ("340", 10, -14), 3481: ("3481 c2", 10, 8), 3948: ("3948 c2", 10, -16),
+                        3675: ("3675 c2", -56, -6)},
        ("plain","L8"): {1592: ("1592", 8, 8)}}
 fig, axes = plt.subplots(2, 3, figsize=(15, 8.5), sharex=True, sharey=True)
 plt.rcParams["axes.xmargin"] = 0.05
