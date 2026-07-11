@@ -33,7 +33,7 @@ for r, arch in enumerate(["matry", "plain"]):
         ax.set_xscale("log"); ax.axhline(0, color="0.8", lw=0.8); ax.grid(alpha=.25)
         ax.tick_params(labelbottom=True)
         if r == 0: ax.set_title(f"layer {L[1:]}", fontsize=12)
-for r, lab in enumerate(["Matryoshka SAE", "Plain SAE"]):
+for r, lab in enumerate(["Matryoshka Top-K SAE", "Top-K SAE"]):
     axes[r, 0].set_ylabel(f"{lab}\ncorr with AR intensity")
 for k in range(3): axes[1, k].set_xlabel("concept breadth (firing rate, log)")
 h = [plt.Line2D([0],[0], marker="o", ls="", mfc=GC[g], mec="none", label=g) for g in GC]
