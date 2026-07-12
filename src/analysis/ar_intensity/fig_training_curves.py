@@ -13,7 +13,7 @@ def matry_final_run(path):
     rows = [json.loads(l) for l in open(f"{path}/training_log.jsonl")]
     starts = [i for i, r in enumerate(rows) if r["step"] == 500]
     return rows[starts[-1]:]
-fig, ax = plt.subplots(1, 3, figsize=(14, 4))
+fig, ax = plt.subplots(1, 2, figsize=(10.5, 4))
 for lab, p in PLAIN.items():
     rows = [json.loads(l) for l in open(f"{p}/training_log.jsonl")]
     seen = {}
@@ -24,10 +24,8 @@ for lab, p in RUNS.items():
     rows = matry_final_run(p)
     x = [r["step"] * 4096 / YR for r in rows]
     ax[1].plot(x, [r["loss"] for r in rows], color=COL[lab], label=lab)
-    ax[2].plot(x, [r["avg_l0"] for r in rows], color=COL[lab], label=lab)
 ax[0].set_title("(a) Standard Top-K SAE", fontsize=10, loc="left"); ax[0].set_ylabel("reconstruction loss")
 ax[1].set_title("(b) Matryoshka Top-K SAE", fontsize=10, loc="left"); ax[1].set_yscale("log"); ax[1].set_ylabel("training loss (prefix sum)")
-ax[2].set_title("(c) Matryoshka mean active latents", fontsize=10, loc="left"); ax[2].set_ylabel("average $L_0$"); ax[2].axhline(32, color="0.6", ls=":")
 for a in ax: a.set_xlabel("year-equivalents of node embeddings"); a.grid(alpha=.3); a.legend(fontsize=8)
 fig.tight_layout(); fig.savefig("/scratch/euh7ys/climate_xai/plots/training_curves.png", dpi=170, bbox_inches="tight")
 print("saved training_curves.png")
