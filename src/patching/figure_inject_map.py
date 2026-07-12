@@ -6,11 +6,11 @@ D = "/scratch/euh7ys/climate_xai/patching"
 d = np.load(f"{D}/inject_field_1592.npz"); lat, lon = d["lat"], d["lon"]
 vmax = float(np.nanmax(d["inject_b1.0"])); diff = d["inject_b1.0"] - d["clear"]
 clamp = d["clamp_a1.0"]
-specs = [("(a) Baseline forecast \u2014 no edit ($z_{1592}$ unmodified)", d["clear"], "YlGnBu", 0, vmax),
-         ("(b) Concept 1592 removed ($z_{1592} = 0$, i.e. $g=0$)", clamp, "YlGnBu", 0, vmax),
-         ("(c) Concept 1592 written in ($z_{1592} = 0.6$, real-AR level)", d["inject_b0.6"], "YlGnBu", 0, vmax),
-         ("(d) Concept 1592 written in ($z_{1592} = 1.0$)", d["inject_b1.0"], "YlGnBu", 0, vmax),
-         ("(e) Moisture added:  (d) \u2212 (a)", diff, "YlOrRd", 0, float(np.nanmax(diff)))]
+specs = [("(a) Baseline ($z$ unmodified)", d["clear"], "YlGnBu", 0, vmax),
+         ("(b) Removed ($z = 0$)", clamp, "YlGnBu", 0, vmax),
+         ("(c) Written in ($z = 0.6$)", d["inject_b0.6"], "YlGnBu", 0, vmax),
+         ("(d) Written in ($z = 1.0$)", d["inject_b1.0"], "YlGnBu", 0, vmax),
+         ("(e) $\\Delta$IVT: (d) $-$ (a)", diff, "YlOrRd", 0, float(np.nanmax(diff)))]
 try:
     import cartopy.crs as ccrs, cartopy.feature as cfeature
     proj = ccrs.PlateCarree(); HAS = True
