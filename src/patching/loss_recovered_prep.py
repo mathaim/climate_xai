@@ -4,7 +4,12 @@ Matry: minmax-scale -> normalize -> decode -> unnormalize -> un-scale."""
 import os, glob, numpy as np, torch
 from src.analysis.ar_intensity.sae_features import load_sae, encode
 OUT = "/scratch/euh7ys/climate_xai/patching/lossrec"; os.makedirs(OUT, exist_ok=True)
-EVENTS = ["2017-08-21T18-00", "2005-01-15T00-00", "2011-06-01T12-00"]
+EVENTS = ["1981-01-10T00-00","1981-04-18T12-00","1981-07-22T06-00","1981-10-05T18-00",
+          "1987-01-15T12-00","1987-04-02T00-00","1987-07-20T12-00","1987-10-28T06-00",
+          "1993-01-25T06-00","1993-04-11T18-00","1993-07-04T00-00","1993-10-16T12-00",
+          "1999-02-08T00-00","1999-05-14T12-00","1999-08-19T06-00","1999-11-23T18-00",
+          "2005-01-15T00-00","2005-06-09T12-00","2005-09-01T06-00","2005-12-25T18-00",
+          "2011-03-05T00-00","2011-06-01T12-00","2014-11-20T18-00","2017-08-21T18-00"]
 SAES = ["matry_L0","matry_L8","matry_L15","plain_L0","plain_L8","plain_L15"]
 def main():
     for name in SAES:
