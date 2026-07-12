@@ -2,7 +2,7 @@
 #SBATCH --job-name=run_loss_recovered_full
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a6000:1
-#SBATCH --time=2:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mem=96G
 #SBATCH --cpus-per-task=4
 #SBATCH --output=/home/euh7ys/climate_xai/logs/run_loss_recovered_full_%j.out

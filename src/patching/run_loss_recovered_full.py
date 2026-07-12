@@ -39,6 +39,7 @@ def main():
                       f"min {rec.min():.3f} (worst {w}) n_ch {len(rec)}", flush=True)
         if not names_saved:
             store["channel_names"] = np.array(names); names_saved = True
+        np.savez(f"{LR}/full_recovered.npz", **store)   # checkpoint after every event
     np.savez(f"{LR}/full_recovered.npz", **store)
     print("ALL DONE", flush=True)
 if __name__ == "__main__":
