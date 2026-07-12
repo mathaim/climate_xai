@@ -16,8 +16,8 @@ def trio(cc, amp_tag, ext, fname):
     dmax = max(np.nanpercentile(np.abs(Dc), 99.8), np.nanpercentile(np.abs(Da), 99.8))
     vmax = np.nanpercentile(B, 99.5)
     fig = plt.figure(figsize=(17, 3.9))
-    specs = [(B, f"(a) baseline forecast IVT, {VALID}", "YlGnBu", 0, vmax),
-             (Dc, f"(b) change when concept {cc} is removed", "RdBu_r", -dmax, dmax),
+    specs = [(B, f"(a) baseline forecast IVT ($g=1$), {VALID}", "YlGnBu", 0, vmax),
+             (Dc, f"(b) change when concept {cc} is removed ($g=0$)", "RdBu_r", -dmax, dmax),
              (Da, f"(c) change when concept {cc} is amplified (g=3)", "RdBu_r", -dmax, dmax)]
     for i, (Z, title, cmap, vmn, vmx) in enumerate(specs):
         ax = fig.add_subplot(1, 3, i+1, **proj)

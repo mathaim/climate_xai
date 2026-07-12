@@ -14,8 +14,8 @@ Da = prep(np.load(f"{PATCH}/ivtmap_ho_99_amp3.npy")) - B
 dmax = max(np.nanpercentile(np.abs(Dc), 99.8), np.nanpercentile(np.abs(Da), 99.8))
 fig = plt.figure(figsize=(17, 3.9))
 for i, (Z, title, cmap, vmn, vmx) in enumerate([
-        (B, "(a) baseline forecast IVT", "YlGnBu", 0, np.nanpercentile(B, 99.5)),
-        (Dc, "(b) change when concept 99 is removed", "RdBu_r", -dmax, dmax),
+        (B, "(a) baseline forecast IVT ($g=1$)", "YlGnBu", 0, np.nanpercentile(B, 99.5)),
+        (Dc, "(b) change when concept 99 is removed ($g=0$)", "RdBu_r", -dmax, dmax),
         (Da, "(c) change when concept 99 is amplified (g=3)", "RdBu_r", -dmax, dmax)]):
     ax = fig.add_subplot(1, 3, i+1, **proj)
     im = ax.pcolormesh(lon, lat, Z, cmap=cmap, vmin=vmn, vmax=vmx, shading="auto", **tk)
