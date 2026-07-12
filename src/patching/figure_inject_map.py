@@ -5,18 +5,20 @@ import matplotlib.pyplot as plt
 D = "/scratch/euh7ys/climate_xai/patching"
 d = np.load(f"{D}/inject_field_1592.npz"); lat, lon = d["lat"], d["lon"]
 vmax = float(np.nanmax(d["inject_b1.0"])); diff = d["inject_b1.0"] - d["clear"]
-specs = [("(a) Baseline forecast \u2014 no injection", d["clear"], "YlGnBu", 0, vmax),
-         ("(b) Inject concept 1592  (b = 0.6, real-AR level)", d["inject_b0.6"], "YlGnBu", 0, vmax),
-         ("(c) Inject concept 1592  (b = 1.0)", d["inject_b1.0"], "YlGnBu", 0, vmax),
-         ("(d) Moisture added:  (c) \u2212 (a)", diff, "YlOrRd", 0, float(np.nanmax(diff)))]
+clamp = d["clamp_a1.0"]
+specs = [("(a) Baseline forecast \u2014 no edit", d["clear"], "YlGnBu", 0, vmax),
+         ("(b) Concept 1592 removed", clamp, "YlGnBu", 0, vmax),
+         ("(c) Inject 1592  (b = 0.6, real-AR level)", d["inject_b0.6"], "YlGnBu", 0, vmax),
+         ("(d) Inject 1592  (b = 1.0)", d["inject_b1.0"], "YlGnBu", 0, vmax),
+         ("(e) Moisture added:  (d) \u2212 (a)", diff, "YlOrRd", 0, float(np.nanmax(diff)))]
 try:
     import cartopy.crs as ccrs, cartopy.feature as cfeature
     proj = ccrs.PlateCarree(); HAS = True
 except Exception:
     proj = None; HAS = False
-fig = plt.figure(figsize=(18, 3.4))
-gs = fig.add_gridspec(1, 4, left=0.08, right=0.93, bottom=0.13, top=0.86, wspace=0.06)
-axes = [fig.add_subplot(gs[0, i], projection=proj) for i in range(4)]
+fig = plt.figure(figsize=(22, 3.4))
+gs = fig.add_gridspec(1, 5, left=0.08, right=0.93, bottom=0.13, top=0.86, wspace=0.06)
+axes = [fig.add_subplot(gs[0, i], projection=proj) for i in range(5)]
 ims = []
 for i, (ax, (title, Z, cmap, vmn, vmx)) in enumerate(zip(axes, specs)):
     if HAS:
@@ -38,7 +40,7 @@ cbL = fig.colorbar(ims[0], cax=caxL); cbL.set_label("IVT (kg m$^{-1}$ s$^{-1}$)"
 caxL.yaxis.set_ticks_position("left"); caxL.yaxis.set_label_position("left")
 # right colorbar: difference (d)
 caxR = fig.add_axes([0.945, 0.20, 0.011, 0.55])
-cbR = fig.colorbar(ims[3], cax=caxR); cbR.set_label("$\\Delta$IVT (kg m$^{-1}$ s$^{-1}$)", fontsize=9)
+cbR = fig.colorbar(ims[4], cax=caxR); cbR.set_label("$\\Delta$IVT (kg m$^{-1}$ s$^{-1}$)", fontsize=9)
 out = "/scratch/euh7ys/climate_xai/plots/inject_1592_map.png"
 os.makedirs(os.path.dirname(out), exist_ok=True)
 plt.savefig(out, dpi=180, bbox_inches="tight", pad_inches=0.12); print("saved", out)
