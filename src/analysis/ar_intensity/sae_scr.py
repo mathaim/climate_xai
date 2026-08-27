@@ -44,6 +44,7 @@ def bal_acc(logits, T, S):
     return float(np.mean(accs))
 def main():
     print("device", DEV, "NMAX", NMAX, flush=True)
+    SAVE = {}
     idx, levels, qi, ui, vi, lat_i, lon_i = load_channel_index()
     era0 = np.load(sorted(glob.glob(f"{ERA5_DIR}/era5_inputs_*.npy"))[0]); nlat = era0[:, lat_i].astype(float)
     extra = np.abs(nlat) >= 20.0; rng = np.random.default_rng(0)
@@ -123,6 +124,13 @@ def main():
             line = "  ".join(f"n={n}: {(np.mean(g['abl'][n])-B)/max(K-B,1e-9):+.3f}"
                              f"(rand {(np.mean(g['rand'][n])-B)/max(K-B,1e-9):+.3f})" for n in NS)
             print(f"SCR {arch}_{L}: biased BA {B:.3f}  skyline BA {K:.3f} | {line}", flush=True)
+        for arch in ("matry", "plain"):
+            g = agg[arch]
+            SAVE[f"{L}_{arch}_biased"] = np.array(g["biased"]); SAVE[f"{L}_{arch}_sky"] = np.array(g["sky"])
+            for n in NS:
+                SAVE[f"{L}_{arch}_abl{n}"] = np.array(g["abl"][n]); SAVE[f"{L}_{arch}_rand{n}"] = np.array(g["rand"][n])
+        np.savez("/scratch/euh7ys/climate_xai/patching/scr_percell.npz", **SAVE)
+        print(f"saved scr_percell.npz through {L}", flush=True)
     print("ALL DONE", flush=True)
 if __name__ == "__main__":
     main()

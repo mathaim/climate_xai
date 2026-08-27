@@ -2,6 +2,7 @@
 Each panel: all 4096 concepts as (firing rate, AR-intensity corr), colored by prefix group
 (matryoshka) or grey (plain). Champions annotated. All inputs cached; no encoding."""
 import numpy as np, matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
+plt.rcParams["axes.titleweight"] = "bold"; plt.rcParams["axes.labelweight"] = "bold"
 C = "/scratch/euh7ys/climate_xai/concept_ivt"; TOT = 8000 * 40962.0
 GC = {"G0": "#c0392b", "G1": "#e67e22", "G2": "#f1c40f", "G3": "#27ae60", "G4": "#2980b9"}
 GRP = lambda c: "G0" if c < 256 else "G1" if c < 512 else "G2" if c < 1024 else "G3" if c < 2048 else "G4"
@@ -9,10 +10,8 @@ CNT = {("matry","L0"): ("macro_persistence_L0L8.npz","cnt8"), ("matry","L8"): ("
        ("matry","L15"): ("macro_persistence.npz","cnt15"), ("plain","L0"): ("macro_persistence_plain_L0L8.npz","cnt8"),
        ("plain","L8"): ("macro_persistence_plain_L8L15.npz","cnt8"), ("plain","L15"): ("macro_persistence_plain_L8L15.npz","cnt15")}
 # per-concept: (label, dx, dy)  -- c1 = child of 99, c2 = child of 340
-LAB = {("matry","L8"): {1454: ("1454 c1", 12, 8), 3392: ("3392 c1", 12, -20), 2722: ("2722 c1", -56, 2),
-                        340: ("340", 10, -14), 3481: ("3481 c2", 10, 8), 3948: ("3948 c2", 10, -16),
-                        3675: ("3675 c2", -56, -6)},
-       ("plain","L8"): {1592: ("1592", 8, 8)}}
+LAB = {("matry","L8"): {340: ("340", 10, -14), 3153: ("3153", -46, 4)},
+       ("plain","L8"): {1592: ("1592", -46, 4)}}
 fig, axes = plt.subplots(2, 3, figsize=(15, 8.5), sharex=True, sharey=True)
 plt.rcParams["axes.xmargin"] = 0.05
 for r, arch in enumerate(["matry", "plain"]):
@@ -20,24 +19,26 @@ for r, arch in enumerate(["matry", "plain"]):
         ax = axes[r, k]
         corr = np.load(f"{C}/ar_corr_{arch}_{L}.npy")
         fn, key = CNT[(arch, L)]; rate = np.load(f"{C}/{fn}")[key] / TOT
-        m = rate > 1e-7
-        cols = [GC[GRP(i)] for i in np.arange(4096)[m]] if arch == "matry" else "0.55"
-        ax.scatter(rate[m], corr[m], s=5, c=cols, alpha=0.45, edgecolor="none")
+        cols = [GC[GRP(i)] for i in range(4096)] if arch == "matry" else "0.55"
+        ax.scatter(rate, corr, s=6, c=cols, alpha=0.50, edgecolor="none")
         ch = int(np.argmax(corr))
-        ax.scatter([rate[ch]], [corr[ch]], s=90, facecolor="none", edgecolor="k", lw=1.4, zorder=5)
-        ax.annotate(str(ch), (rate[ch], corr[ch]), textcoords="offset points", xytext=(7, 5), fontsize=9, weight="bold", zorder=6)
+        ax.scatter([rate[ch]], [corr[ch]], s=130, facecolor="none", edgecolor="k", lw=1.7, zorder=5)
+        ax.annotate(str(ch), (rate[ch], corr[ch]), textcoords="offset points", xytext=(10, 7), fontsize=15, weight="bold", zorder=6)
         for cc, (lab, dx, dy) in LAB.get((arch, L), {}).items():
-            ax.scatter([rate[cc]], [corr[cc]], s=60, facecolor="none", edgecolor="0.15", lw=1.1, zorder=5)
-            ax.annotate(lab, (rate[cc], corr[cc]), textcoords="offset points", xytext=(dx, dy), fontsize=8.5, weight="bold", zorder=6)
+            mk = "^" if (" c1" in lab or " c2" in lab) else "o"
+            ax.scatter([rate[cc]], [corr[cc]], s=115, marker=mk, facecolor="none", edgecolor="0.15", lw=1.5, zorder=5)
+            ax.annotate(lab, (rate[cc], corr[cc]), textcoords="offset points", xytext=(12 if dx >= 0 else -12, dy), fontsize=13.5, weight="bold", zorder=6, ha=("left" if dx >= 0 else "right"), va="center")
         ax.set_ylim(-0.44, 0.60)
         ax.set_xscale("log"); ax.axhline(0, color="0.8", lw=0.8); ax.grid(alpha=.25)
-        ax.tick_params(labelbottom=True)
-        if r == 0: ax.set_title(f"layer {L[1:]}", fontsize=12)
-for r, lab in enumerate(["Matryoshka Top-K SAE", "Top-K SAE"]):
-    axes[r, 0].set_ylabel(f"{lab}\ncorr with AR intensity")
-for k in range(3): axes[1, k].set_xlabel("concept breadth (firing rate, log)")
+        ax.tick_params(labelsize=13)
+        if r == 0: ax.set_title(f"layer {L[1:]}", fontsize=20)
+for r, lab in enumerate(["Matryoshka SAE", "Standard SAE"]):
+    axes[r, 0].set_ylabel(f"{lab}\ncorr with AR intensity", fontsize=16)
+for k in range(3): axes[1, k].set_xlabel("concept breadth (firing rate, log)", fontsize=16)
 h = [plt.Line2D([0],[0], marker="o", ls="", mfc=GC[g], mec="none", label=g) for g in GC]
-axes[0, 0].legend(handles=h, fontsize=8, title="prefix group", loc="upper left")
-fig.tight_layout()
-fig.savefig("/scratch/euh7ys/climate_xai/plots/org_map.png", dpi=170, bbox_inches="tight")
+axes[0, 0].legend(handles=h, fontsize=13, title="prefix group", title_fontsize=13, loc="upper left")
+fig.tight_layout(pad=0.6, w_pad=0.35, h_pad=0.6)
+fig.subplots_adjust(wspace=0.05, hspace=0.06)
+for _ax in axes.flat: _ax.minorticks_off(); _ax.tick_params(direction="in", length=3)
+fig.savefig("/scratch/euh7ys/climate_xai/plots/org_map.png", dpi=240, bbox_inches="tight")
 print("saved org_map.png")

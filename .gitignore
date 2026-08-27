@@ -59,3 +59,9 @@ slurm-*.out
 wandb/
 *.bak.*
 nohup.out
+
+# generated figures
+/plots/
+
+# GraphCast weights (large, live on scratch)
+/graphcast_checkpoints/
