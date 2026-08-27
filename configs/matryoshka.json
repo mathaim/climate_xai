@@ -1,0 +1,17 @@
+{
+  "d_model": 512,
+  "n_latents": 4096,
+  "group_sizes": [256, 512, 1024, 2048, 4096],
+  "target_l0": 32.0,
+  "topk_mode": "per_sample",
+  "lr": 0.0002,
+  "n_steps": 300000,
+  "batch_size": 4096,
+  "data_dir": "activations/layer8",
+  "output_dir": "checkpoints/matryoshka_layer8",
+  "log_every": 500,
+  "save_every": 10000,
+  "metrics_every": 5000,
+  "seed": 42,
+  "resume": null
+}

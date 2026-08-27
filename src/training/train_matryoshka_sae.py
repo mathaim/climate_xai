@@ -3,7 +3,7 @@
 Train Matryoshka SAE (BatchTopK) on GraphCast layer activations.
 
 Usage:
-  python -m src.training.train_matryoshka_sae --config configs/matryoshka_layer8_v4.json
+  python -m src.training.train_matryoshka_sae --config configs/matryoshka.json
   python -m src.training.train_matryoshka_sae --layer 1 --data_dir activations/layer01
   python -m src.training.train_matryoshka_sae --layer 8 --n_steps 300000 --batch_size 4096
 """
@@ -34,8 +34,8 @@ def get_config():
     parser.add_argument("--group_sizes", type=int, nargs="+", default=DEFAULT_GROUP_SIZES,
                         help="Nested group boundaries (last must equal n_latents)")
     parser.add_argument("--target_l0", type=float, default=32.0)
-    parser.add_argument("--lr", type=float, default=3e-2)
-    parser.add_argument("--topk_mode", type=str, default="batch", choices=["batch","per_sample"])
+    parser.add_argument("--lr", type=float, default=2e-4)
+    parser.add_argument("--topk_mode", type=str, default="per_sample", choices=["batch","per_sample"])
 
     # Training
     parser.add_argument("--n_steps", type=int, default=300_000)

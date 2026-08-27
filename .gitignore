@@ -65,3 +65,7 @@ nohup.out
 
 # GraphCast weights (large, live on scratch)
 /graphcast_checkpoints/
+CLAUDE.md
+
+# top-level scratch symlink (not the src/data package)
+/data
