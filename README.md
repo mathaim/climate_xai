@@ -1,7 +1,5 @@
 # Climate XAI: Mechanistic Interpretability of Atmospheric Rivers in GraphCast
 
-Code for *Beyond Finding Features: The Organization, Depth Evolution, and Causal Role of Concepts in AI Models of Climate Systems* (M. Mathai, T. B. Higgins, K. M. Grise, C. Agarwal, A. Mamalakis).
-
 We train sparse autoencoders (SAEs) on [GraphCast](https://github.com/google-deepmind/graphcast) to identify, organize, trace, and causally test the concepts it learns for atmospheric rivers (ARs).
 
 ## Repository layout
