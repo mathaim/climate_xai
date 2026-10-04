@@ -1,7 +1,7 @@
 """Gate 1: my JAX weight mapping must reproduce the real PlainSAE active features."""
 import glob, numpy as np, torch
-from src.patching.sae_to_jax import load_l15_weights
-from src.analysis.ar_intensity.sae_features import load_sae, encode
+from steering.sae_to_jax import load_l15_weights
+from analysis.lib.sae_features import load_sae, encode
 DIR = "/project/AikyamLab/madelyn/GraphCast/activations/Layer15"
 def test_weight_mapping_matches_plain_sae():
     enc_w, dec_w, b_pre, k = load_l15_weights()

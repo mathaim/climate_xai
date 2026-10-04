@@ -1,5 +1,5 @@
 import numpy as np
-from src.analysis.ar_intensity.ivt import ivt, layer_thickness_pa
+from analysis.lib.ivt import ivt, layer_thickness_pa
 def test_thickness_total_equals_range():
     assert np.isclose(layer_thickness_pa([1000,500]).sum(), 50000.0)   # 500 hPa = 50000 Pa
 def test_ivt_zonal_only():

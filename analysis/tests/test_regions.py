@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 import numpy as np
-from src.analysis.ar_intensity.regions import REGIONS, index_to_datetime, cos_lat_weights
+from analysis.lib.regions import REGIONS, index_to_datetime, cos_lat_weights
 def test_four_regions():
     assert set(REGIONS) == {"W_N_America","W_Europe","W_S_America","E_Australia"}
 def test_index_alignment():
