@@ -69,3 +69,17 @@ CLAUDE.md
 
 # top-level scratch symlink (not the src/data package)
 /data
+
+# ops + outputs (kept on disk, not uploaded)
+scripts/slurm/
+logs/
+results/
+plots/
+graphcast_checkpoints/
+nohup.out
+**/__pycache__/
+*.pyc
+*.bak.*
+# separate project, not part of this repo
+src/tda/
+tests/tda/
