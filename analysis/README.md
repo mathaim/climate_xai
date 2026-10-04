@@ -1,6 +1,6 @@
 # Regional AR Intensity -> SAE Concept Organization — Design Spec
 
-**Date:** 2026-06-15  **Status:** approved-for-planning
+**Date:** 2026-06-15
 
 ## Goal
 Determine whether, where, and how GraphCast's sparse autoencoders organize
@@ -10,7 +10,7 @@ whether the SAEs distinguish it from the three westerly west-coast regions.
 
 ## Architecture
 Staged pipeline with cached intermediates (each stage independently
-re-runnable). Code in `src/analysis/ar_intensity/`. Outputs in
+re-runnable). Code in `analysis/`. Outputs in
 `/project/AikyamLab/madelyn/GraphCast/AtmosphericRivers/intensity_pipeline/`
 (AR source masks remain on `/standard/.../AtmosphericRivers/Intensities/`).
 
