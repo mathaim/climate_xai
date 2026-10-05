@@ -8,7 +8,7 @@ P="/project/AikyamLab/madelyn/GraphCast"; SCR="/scratch/euh7ys/climate_xai"
 SAES={
  "plain_L0": dict(arch="plain",layer=0, ckpt=f"{P}/train/PlainSAE/Layer00/final_model.pt",      act=f"{SCR}/activations/layer00"),
  "plain_L8": dict(arch="plain",layer=8, ckpt=f"{SCR}/checkpoints/plain_layer8/final_model.pt",   act=f"{P}/activations/Layer08"),
- "plain_L15":dict(arch="plain",layer=15,ckpt=f"{P}/train/PlainSAE/Layer15/checkpoint_epoch008.pt",act=f"{P}/activations/Layer15"),
+ "plain_L15":dict(arch="plain",layer=15,ckpt=f"{P}/train/PlainSAE/Layer15/final_model.pt",act=f"{P}/activations/Layer15"),
  "matry_L0": dict(arch="matry",layer=0, ckpt=f"{P}/train/MatryoshkaSAE/Layer00/final_model.pt",  act=f"{SCR}/activations/layer00"),
  "matry_L8": dict(arch="matry",layer=8, ckpt=f"{P}/train/MatryoshkaSAE/Layer08/final_model.pt",  act=f"{P}/activations/Layer08"),
  "matry_L15":dict(arch="matry",layer=15,ckpt=f"{P}/train/MatryoshkaSAE/Layer15/final_model.pt",  act=f"{P}/activations/Layer15"),
