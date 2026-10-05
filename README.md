@@ -62,3 +62,8 @@ AR labels are large and are not stored in this repository; they live on
 project/scratch storage and are referenced through the data/ symlink and
 graphcast_checkpoints/. SLURM job scripts are kept locally and are not part of
 the repository.
+
+## Pretrained models
+Trained SAE weights (Standard and Matryoshka TopK, layers 0/8/15) are on Hugging Face:
+https://huggingface.co/madelynmathai/graphcast_SAE
+Each model folder has `final_model.pt` and `config.json`; load with `train/models/`.
